@@ -3,6 +3,8 @@ using System.Runtime.InteropServices;
 using revecs.Core.Boards;
 using revecs.Core.Components.Boards.Modifiers;
 using revecs.Utility;
+using revghost.Shared.Collections;
+using revghost.Shared.Events;
 
 namespace revecs.Core.Components.Boards.Bases
 {

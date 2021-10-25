@@ -1,7 +1,7 @@
 using revecs.Core;
 using revecs.Core.Components;
 using revecs.Utility;
-using revecs.Utility.Threading;
+using revtask.Core;
 
 namespace revecs.Systems;
 

@@ -1,5 +1,5 @@
-using revecs.Utility;
-using revecs.Utility.Threading;
+using revghost.Shared.Threading;
+using revtask.Core;
 
 namespace revecs.Systems;
 

@@ -1,4 +1,5 @@
 using System.Runtime.CompilerServices;
+using revghost.Shared.Events;
 
 namespace revecs.Core.Boards
 {

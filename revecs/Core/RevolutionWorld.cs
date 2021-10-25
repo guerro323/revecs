@@ -1,5 +1,6 @@
 using revecs.Core.Boards;
-using revecs.Utility.Threading;
+using revtask.Core;
+using revtask.OpportunistJobRunner;
 
 namespace revecs.Core
 {

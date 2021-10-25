@@ -2,7 +2,8 @@ using revecs.Core;
 using revecs.Extensions.Buffers;
 using revecs.Extensions.Generator.Commands;
 using revecs.Systems;
-using revecs.Utility.Threading;
+using revtask.Core;
+using revtask.OpportunistJobRunner;
 using Xunit;
 using Xunit.Abstractions;
 

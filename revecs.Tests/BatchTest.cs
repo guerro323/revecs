@@ -1,5 +1,6 @@
-using System.Text;
-using revecs.Utility.Threading;
+using revtask.Core;
+using revtask.Helpers;
+using revtask.OpportunistJobRunner;
 using Xunit;
 using Xunit.Abstractions;
 

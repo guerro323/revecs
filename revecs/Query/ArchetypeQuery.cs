@@ -1,7 +1,7 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using revecs.Core;
-using revecs.Utility;
+using revghost.Shared.Threading;
 
 namespace revecs.Query;
 

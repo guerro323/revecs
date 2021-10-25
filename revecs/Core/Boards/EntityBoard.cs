@@ -1,6 +1,7 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using revecs.Utility;
+using revghost.Shared.Collections;
+using revghost.Shared.Events;
 
 namespace revecs.Core.Boards
 {

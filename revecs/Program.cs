@@ -8,7 +8,9 @@ using revecs.Extensions.Buffers;
 using revecs.Extensions.EntityLayout;
 using revecs.Extensions.LinkedEntity;
 using revecs.Extensions.RelativeEntity;
-using revecs.Utility.Threading;
+using revtask.Core;
+using revtask.Helpers;
+using revtask.OpportunistJobRunner;
 
 namespace revecs
 {

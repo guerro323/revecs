@@ -1,7 +1,8 @@
 using revecs.Core;
 using revecs.Extensions.Generator.Components;
 using revecs.Systems;
-using revecs.Utility.Threading;
+using revtask.Core;
+using revtask.OpportunistJobRunner;
 using Xunit;
 using Xunit.Abstractions;
 

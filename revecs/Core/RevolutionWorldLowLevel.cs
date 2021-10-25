@@ -1,6 +1,7 @@
 using System.Runtime.CompilerServices;
 using revecs.Core.Boards;
 using revecs.Core.Components.Boards.Bases;
+using revghost.Shared;
 
 namespace revecs.Core
 {
