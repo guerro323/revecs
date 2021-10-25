@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "revecs", "revecs\revecs.csproj", "{4C21E9EF-AE02-438A-80B5-FCBF5E258852}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "revecs.Tests", "revecs.Tests\revecs.Tests.csproj", "{7CD77023-7B1D-48E0-80EF-777E3B07C5FC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "revecs.Generator", "revecs.Generator\revecs.Generator.csproj", "{DF5B46E6-0D26-4191-BEB5-12AFD013B181}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{4C21E9EF-AE02-438A-80B5-FCBF5E258852}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4C21E9EF-AE02-438A-80B5-FCBF5E258852}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4C21E9EF-AE02-438A-80B5-FCBF5E258852}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4C21E9EF-AE02-438A-80B5-FCBF5E258852}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7CD77023-7B1D-48E0-80EF-777E3B07C5FC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7CD77023-7B1D-48E0-80EF-777E3B07C5FC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7CD77023-7B1D-48E0-80EF-777E3B07C5FC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7CD77023-7B1D-48E0-80EF-777E3B07C5FC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DF5B46E6-0D26-4191-BEB5-12AFD013B181}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DF5B46E6-0D26-4191-BEB5-12AFD013B181}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DF5B46E6-0D26-4191-BEB5-12AFD013B181}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DF5B46E6-0D26-4191-BEB5-12AFD013B181}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

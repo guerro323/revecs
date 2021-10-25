@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net6.0</TargetFramework>
+        <Nullable>enable</Nullable>
+
+        <IsPackable>false</IsPackable>
+
+        <LangVersion>preview</LangVersion>
+        <EnablePreviewFeatures>True</EnablePreviewFeatures>
+
+        <OutputType>Library</OutputType>
+
+        <RootNamespace>Revecs.Tests</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.10.0" />
+        <PackageReference Include="coverlet.collector" Version="3.0.3" />
+        <PackageReference Include="xunit" Version="2.4.2-pre.12" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\revecs.Generator\revecs.Generator.csproj" OutputItemType="Analyzer" />
+      <ProjectReference Include="..\revecs\revecs.csproj" />
+    </ItemGroup>
+
+    <!--<ItemGroup>
+      <Folder Include="Generated\Generator\Generator.Class1" />
+        <Compile Remove="Generated\Generator\Generator.Class1\*.cs" />
+        <None Include="Generated\Generator\Generator.Class1\*.cs" />
+    </ItemGroup>-->
+
+    <PropertyGroup>
+        <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+        <CompilerGeneratedFilesOutputPath>../Generated</CompilerGeneratedFilesOutputPath>
+    </PropertyGroup>
+
+</Project>
