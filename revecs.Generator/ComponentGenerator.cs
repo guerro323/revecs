@@ -263,6 +263,7 @@ namespace revecs
 using revecs.Utility;
 using revecs.Query;
 using revecs.Systems;
+using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using revtask.Core;
@@ -318,7 +319,7 @@ using revtask.Helpers;
 
         void BeginComponent()
         {
-            sb.AppendLine($"    public partial {(source.IsRecord ? "record" : "")} struct {source.Name} {{");
+            sb.AppendLine($"    partial {(source.IsRecord ? "record" : "")} struct {source.Name} {{");
         }
 
         void EndComponent()
