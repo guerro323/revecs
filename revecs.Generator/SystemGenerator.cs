@@ -743,7 +743,7 @@ using System.Runtime.InteropServices;
             {
                 if (obj is QuerySource querySource)
                 {
-                    if (querySource.Header.Any(t => t.Name == QueryGenerator.OptionalType))
+                    if (querySource.Header.Any(t => t.Name is QueryGenerator.OptionalType or $"{QueryGenerator.OptionalType}Attribute"))
                         continue;
                     
                     earlyReturn.Append("                ");
