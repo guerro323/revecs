@@ -306,7 +306,7 @@ using System.Runtime.InteropServices;
 
                         validQueryName = arg.Type.Name + "<";
                         validQueryName += string.Join(',',
-                            ((INamedTypeSymbol) arg.Type).TypeArguments.Select(_ => "ValueTuple"));
+                            ((INamedTypeSymbol) arg.Type).TypeArguments.Select(_ => "global::System.ValueTuple"));
                         validQueryName += ">";
 
                         foreach (var t in ((INamedTypeSymbol) arg.Type).TypeArguments)
@@ -363,7 +363,7 @@ using System.Runtime.InteropServices;
 
                         validCmdName = arg.Type.Name + "<";
                         validCmdName += string.Join(',',
-                            ((INamedTypeSymbol) arg.Type).TypeArguments.Select(_ => "ValueTuple"));
+                            ((INamedTypeSymbol) arg.Type).TypeArguments.Select(_ => "global::System.ValueTuple"));
                         validCmdName += ">";
 
                         foreach (var t in ((INamedTypeSymbol) arg.Type).TypeArguments)
