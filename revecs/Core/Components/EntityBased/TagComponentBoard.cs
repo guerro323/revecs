@@ -21,7 +21,11 @@ public class TagComponentBoard : EntityComponentBoardBase
     {
         var validReference = new UComponentReference(ComponentType, new UComponentHandle(1));
         foreach (ref readonly var entity in entities)
+        {
             _componentLinkBoard.AssignComponentReference(entity, validReference);
+            
+            World.ArchetypeUpdateBoard.Queue(entity);
+        }
 
         foreach (ref var result in output)
             result = validReference;
@@ -33,6 +37,8 @@ public class TagComponentBoard : EntityComponentBoardBase
         for (var i = 0; i < entities.Length; i++)
         {
             removed[i] = _componentLinkBoard.AssignComponentReference(entities[i], nullReference).Id != 0;
+            
+            World.ArchetypeUpdateBoard.Queue(entities[i]);
         }
     }
 

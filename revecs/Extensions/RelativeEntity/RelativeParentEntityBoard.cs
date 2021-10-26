@@ -31,6 +31,8 @@ public class RelativeParentEntityBoard : EntityComponentBoardBase
             (
                 new UComponentHandle(entity.Id)
             );
+            
+            World.ArchetypeUpdateBoard.Queue(entity);
         }
     }
 
@@ -46,6 +48,8 @@ public class RelativeParentEntityBoard : EntityComponentBoardBase
             var list = column.children[entity.Id];
             while (list.Count > 0)
                 _mainBoard.SetLinked(ComponentType, default, list[^1]);
+            
+            World.ArchetypeUpdateBoard.Queue(entity);
         }
     }
 

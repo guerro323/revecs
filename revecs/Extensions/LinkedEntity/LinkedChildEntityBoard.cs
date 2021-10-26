@@ -30,6 +30,8 @@ public class LinkedChildEntityBoard : EntityComponentBoardBase
             _componentLinkBoard.GetColumn(ComponentType)[entity.Id] = EntityComponentLink.Reference(
                 new UComponentHandle(entity.Id)
             );
+            
+            World.ArchetypeUpdateBoard.Queue(entity);
         }
     }
 
@@ -50,6 +52,8 @@ public class LinkedChildEntityBoard : EntityComponentBoardBase
                     parentLength--;
                 }
             }
+            
+            World.ArchetypeUpdateBoard.Queue(entity);
         }
     }
 
