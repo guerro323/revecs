@@ -2,7 +2,7 @@ namespace revecs.Extensions.Generator.Components;
 
 public interface ITagComponent : IRevolutionComponent
 {
-    public const string Imports = "using revecs.Core.Components.Boards;\nusing revecs.Extensions.Generator;\nusing nrevecs.Core.Components;";
+    public const string Imports = "using revecs.Core.Components.Boards;\nusing revecs.Extensions.Generator;\nusing revecs.Core.Components;";
  
     // The accessors are kinda useless on this type (since the calls would be the same without them)
     // But they serve as a helper for future component types (such as buffer which need custom accessors)
