@@ -265,7 +265,8 @@ using revecs.Query;
 using revecs.Systems;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using revecs.Utility.Threading;
+using revtask.Core;
+using revtask.Helpers;
 ");
 
             foreach (var (_, obj) in map)

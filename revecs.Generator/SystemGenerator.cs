@@ -194,11 +194,11 @@ namespace revecs
 using revecs.Utility;
 using revecs.Query;
 using revecs.Systems;
+using revtask.Core;
+using revtask.Helpers;
 using revecs.Extensions.Buffers;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using revecs.Utility.Threading;
-
 ");
             
             var imports = declare.SyntaxTree.GetRoot().DescendantNodes().Where(node => node is UsingDirectiveSyntax);

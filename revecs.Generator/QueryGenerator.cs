@@ -118,9 +118,10 @@ namespace revecs
 using revecs.Utility;
 using revecs.Query;
 using revecs.Systems;
+using revtask.Core;
+using revtask.Helpers;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using revecs.Utility.Threading;
 ");
 
         var isSingleton = source.Header.Any(t => t.Name is SingletonType or $"{SingletonType}Attribute");
