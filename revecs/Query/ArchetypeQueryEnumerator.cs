@@ -47,8 +47,8 @@ public unsafe ref struct ArchetypeQueryEnumerator
         //       (this can be necessary for nested queries)
         if (current.Id == default)
             index--;*/
-
-        if (index >= entities.Length)
+        
+        while (index >= entities.Length)
         {
             if (!MoveInnerNext())
                 return false;
