@@ -72,7 +72,8 @@ namespace revecs.Core
                     RemoveComponent(entity, compType);
                 }
                 
-                ArchetypeUpdateBoard.Dequeue(entity);
+                ArchetypeUpdateBoard.Queue(entity);
+                ArchetypeUpdateBoard.Update(entity);
             }
 
             EntityBoard.DestroyEntities(entities);
