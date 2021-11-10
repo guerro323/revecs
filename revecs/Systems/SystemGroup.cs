@@ -82,12 +82,13 @@ public class SystemGroup
         foreach (var (handle, system) in _systems)
         {
             {
-                World.GetComponentData(handle, _systemStateComponent) = SystemState.WaitingCreation;
+                World.GetComponentData(handle, _systemStateComponent) = SystemState.Queued;
             }
             var systemBatch = system.Queue(handle, World, runner);
             {
                 World.GetComponentData(handle, _currentSystemBatchComponent) = systemBatch;
-                World.GetComponentData(handle, _systemStateComponent) = SystemState.Queued;
+                if (systemBatch == default)
+                    World.GetComponentData(handle, _systemStateComponent) = SystemState.None;
             }
 
             if (systemBatch != default)

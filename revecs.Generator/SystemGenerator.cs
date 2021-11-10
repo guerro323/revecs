@@ -812,7 +812,8 @@ using System.Runtime.InteropServices;
                         return false;
                 }}
 
-                return {canExecute};
+                using (SwapDependency.BeginContext())
+                    return {canExecute};
             }}
 
             private void Do()

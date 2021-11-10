@@ -373,7 +373,8 @@ using System.Runtime.InteropServices;
             sb.Append($@"
         public bool DependencySwap(IJobRunner runner, JobRequest request)
         {{
-            return {dependencies};
+            using (SwapDependency.BeginContext())
+                return {dependencies};
         }}
 
         public void AddDependencyReader(IJobRunner runner, JobRequest request)

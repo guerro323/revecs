@@ -275,6 +275,7 @@ using revtask.Helpers;
             sb.AppendLine($@"
         public bool DependencySwap(IJobRunner runner, JobRequest request)
         {{
+            using (SwapDependency.BeginContext())
             return true 
 {expr};
         }}
