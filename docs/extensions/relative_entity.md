@@ -27,7 +27,7 @@ world.AddRelative(playerDescription, characterEntity, playerEntity);
 world.TryGetRelative(playerDescription, characterEntity, out playerEntity);
 
 // read children
-foreach (UEntityHandldeworld.ReadOwnedRelatives(playerDescription, playerEntity))
+foreach (UEntityHandle handle in world.ReadOwnedRelatives(playerDescription, playerEntity))
 {
     // contains characterEntity
 }
