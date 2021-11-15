@@ -1,40 +1,26 @@
-## Getting Started
-### Without Source Generator
-```c#
+<html>
+    <p align="center">
+        <img src="wiki/logo_wide.png" alt="Revecs logo" width="825"
+        height="256" />
+    </p>
+    <h2 align="center">
+    Revecs - An unmanaged C# ecs
+    </h2>
+</html>
 
-var world = new RevolutionWorld();
-var myComponentType = world.RegisterComponentType<SparseSetComponentSetup<int>>();
-
-var entity = world.CreateEntity();
-world.AddComponentData(entity, myComponentType, 42);
-
-var query = new EntityQuery(all: new[] { myComponentType });
-var accessor = world.AccessSparseSet(myComponentType);
-foreach (var entity in query)
-{
-    ref var value = ref accessor[entity];
-}
-```
-
-### With Source Generator
-```c#
-partial struct MyComponent : ISparseComponent { public int Value; }
-partial struct MyCommand : ICmd, MyComponent.Cmd.IAdmin, IEntityCmdAdmin {}
-partial struct MyQuery : IQuery, Read<MyComponent> {}
-
-var world = new RevolutionWorld();
-
-var cmd = new MyCommand(world);
-var query = new MyQuery(world);
-
-var entity = cmd.CreateEntity();
-cmd.AddMyComponent(entity, new MyComponent { Value = 42 });
-// or if commands aren't needed
-var entity = world.CreateEntity();
-world.AddComponentData(entity, MyComponent.Type.GetOrCreate(world), new MyComponent { Value = 42 });
-
-foreach (var (entity, comp) in query)
-{
-    ref var value = ref comp.Value;
-}
-```
+## Documentation
+1. Getting Started
+    - [Minimal Start](./docs/minimal_start.md)
+    - [Incrementing System Sample](./docs/incrementing_system.md)
+    - [Ping Pong Sample]()
+2. Advanced
+    - [World and Board](./docs/world_and_boards.md)
+    - [Components](./docs/components.md)
+    - [Queries](./docs/queries.md)
+    - [Commands](./docs/commands.md)
+    - [Systems](./docs/systems.md)
+3. Extensions
+    - [Component Buffer](./docs/extensions/component_buffer.md)
+    - [Entity Layout](./docs/extensions/entity_layout.md)
+    - [Linked Entity](./docs/extensions/linked_entity.md)
+    - [Relative Entity](./docs/extensions/relative_entity.md)
