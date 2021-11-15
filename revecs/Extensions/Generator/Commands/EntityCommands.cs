@@ -49,3 +49,15 @@ public interface ICmdEntityExists : IRevolutionCommand,
     public bool Exists(UEntityHandle handle) => throw new NotImplementedException(nameof(Exists));
     public bool Exists(UEntitySafe handle) => throw new NotImplementedException(nameof(Exists));
 }
+
+public interface ICmdEntitySafe : IRevolutionCommand, 
+    __EntityCommandBase
+{
+    public const string Body = @"
+        public UEntitySafe Safe(UEntityHandle handle) => World.Safe(handle);
+";
+
+    public const string ReadAccess = @"if (Entity_WriteCount == 0) EntityDependency.AddReader(request);";
+    
+    public UEntitySafe Safe(UEntityHandle handle) => throw new NotImplementedException(nameof(Safe));
+}
