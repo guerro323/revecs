@@ -11,8 +11,12 @@
 
     <ItemGroup>
         <PackageReference Include="Collections.Pooled" Version="2.0.0-preview.27" />
-        <PackageReference Include="revghost.Shared" Version="2021.10.25.2331" />
-        <PackageReference Include="revtask" Version="2021.10.25.2340" />
+        <PackageReference Include="revghost.Shared" Version="2021.10.25.2331">
+            <SpecificVersion>False</SpecificVersion>
+        </PackageReference>
+        <PackageReference Include="revtask" Version="2021.10.25.2340">
+            <SpecificVersion>False</SpecificVersion>
+        </PackageReference>
     </ItemGroup>
 
 </Project>
