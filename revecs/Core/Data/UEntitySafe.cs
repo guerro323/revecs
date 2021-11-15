@@ -18,5 +18,10 @@ namespace revecs.Core
             Row = row;
             Version = version;
         }
+
+        public bool Equals(UEntitySafe other)
+        {
+            return Row == other.Row && Version == other.Version;
+        }
     }
 }
