@@ -14,7 +14,7 @@ public class RelativeChildEntityBoard : EntityComponentBoardBase
     public RelativeChildEntityBoard(RevolutionWorld world) : base(world)
     {
         _mainBoard = world.GetBoard<RelativeEntityMainBoard>(RelativeEntityMainBoard.BoardName);
-        _componentLinkBoard = world.GetBoard<EntityComponentLinkBoard>("EntityComponentLink");
+        _componentLinkBoard = world.EntityComponentLinkBoard;
     }
 
     public ComponentType DescriptionType { get; init; }

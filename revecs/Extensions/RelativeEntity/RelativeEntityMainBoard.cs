@@ -70,7 +70,6 @@ public class RelativeEntityMainBoard : BoardBase
         _entityResizeEv.Dispose();
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool SetLinked(ComponentType type, UEntityHandle parent, UEntityHandle child)
     {
         ref var currentParent = ref columns[type.Handle].parent[child.Id];
