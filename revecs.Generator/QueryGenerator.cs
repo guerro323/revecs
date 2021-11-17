@@ -253,12 +253,10 @@ using System.Runtime.InteropServices;
             {
                 if (arg.IsOption)
                     continue;
-
-                var custom = ComponentGenerator.GetCustomAccess(Compilation, arg.Symbol);
-
+                
                 sb.AppendLine();
                 sb.AppendLine(
-                    $"        private ComponentType<{arg.Symbol.GetTypeName()}> {arg.Symbol.Name}Type;"
+                    $"        private ComponentType {arg.Symbol.Name}Type;"
                 );
                 sb.AppendLine(
                     $"        private SwapDependency {arg.Symbol.Name}Dependency;"
@@ -512,7 +510,7 @@ using System.Runtime.InteropServices;
             [MethodImpl(MethodImplOptions.AggressiveInlining)] get
             {{
                  return ref (Query.Any() 
-                        ? ref Query.World.GetComponentData(Query.EntityAt(0), {arg.Symbol.Name}Type)
+                        ? ref Query.World.GetComponentData(Query.EntityAt(0), {arg.Symbol.Name}Type.UnsafeCast<{arg.Symbol.GetTypeName()}>())
                         : ref Unsafe.NullRef<{arg.Symbol.GetTypeName()}>()); 
             }}
         }}");
@@ -572,8 +570,12 @@ using System.Runtime.InteropServices;
                         ? $"{arg.Symbol.Name}ValueRef"
                         : $"new R{arg.Symbol.Name} {{ Span = MemoryMarshal.CreateSpan(ref Accessor{arg.Symbol.Name}[iter.Handle], 1) }}";
 
+                    var declare = arg.Custom.DisableReferenceWrapper
+                        ? "var"
+                        : "ref var";
+                    
                     iterationInit.Append($@"
-                    ref var {accessor.GetAccess($"{arg.Symbol.Name}ValueRef", $"Accessor{arg.Symbol.Name}", "iter.Handle", "ref")};
+                    {declare} {accessor.GetAccess($"{arg.Symbol.Name}ValueRef", $"Accessor{arg.Symbol.Name}", "iter.Handle", "ref")};
                     iter.{arg.Symbol.Name} = {iterationAccess};
 ");
                 }

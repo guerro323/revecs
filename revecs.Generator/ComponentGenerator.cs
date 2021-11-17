@@ -70,7 +70,8 @@ public class ComponentGenerator
         }
     }
 
-    public record CustomAccessResult(bool DisableReferenceWrapper, string Usings, AccessorAccess? ViaAccessor = null,
+    public record CustomAccessResult(bool DisableReferenceWrapper, bool DisablePassByReference, 
+        string Usings, AccessorAccess? ViaAccessor = null,
         WorldAccess? ViaWorld = null);
 
     public static CustomAccessResult GetCustomAccess(Compilation compilation, INamedTypeSymbol symbol)
@@ -122,6 +123,7 @@ public class ComponentGenerator
         }
 
         var disableReferenceWrapper = false;
+        var disablePassByReference = false;
         var usings = string.Empty;
         string accessorFieldType = null,
             accessorInit = null,
@@ -152,6 +154,9 @@ public class ComponentGenerator
                 if (fieldSymbol.Name == "DisableReferenceWrapper")
                     disableReferenceWrapper = (bool) fieldSymbol.ConstantValue!;
 
+                if (fieldSymbol.Name == "DisablePassByReference")
+                    disablePassByReference = (bool) fieldSymbol.ConstantValue!;
+                
                 if (fieldSymbol.Name == "Imports")
                     usings += fieldSymbol.ConstantValue!.ToString();
 
@@ -177,7 +182,7 @@ public class ComponentGenerator
             ? null
             : new WorldAccess(worldAccess, worldValueType);
 
-        return new CustomAccessResult(disableReferenceWrapper, usings, accessor, world);
+        return new CustomAccessResult(disableReferenceWrapper, disablePassByReference, usings, accessor, world);
     }
 
     private void Log<T>(int indent, T txt)

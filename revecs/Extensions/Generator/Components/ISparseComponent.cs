@@ -21,11 +21,11 @@ public interface ISparseComponent : IRevolutionComponent
             public const bool DisableReferenceWrapper = false;
 
             public const string AccessorAccess_FieldType = ""SparseSetAccessor<[TypeAddr]>"";
-            public const string AccessorAccess_Init = ""[field] = [world].AccessSparseSet<[TypeAddr]>([componentType]);"";
+            public const string AccessorAccess_Init = ""[field] = [world].AccessSparseSet<[TypeAddr]>([componentType].UnsafeCast<[TypeAddr]>());"";
             public const string AccessorAccess_Access = ""[value] = [access] [field][[entity]]"";
             public const string AccessorAccess_ValueType = ""[TypeAddr]"";
 
-            public const string WorldAccess_Access = ""[value] = [access] [world].GetComponentData([entity], [componentType])"";
+            public const string WorldAccess_Access = ""[value] = [access] [world].GetComponentData([entity], [componentType].UnsafeCast<[TypeAddr]>())"";
             public const string WorldAccess_ValueType = ""[TypeAddr]"";
         }
 
