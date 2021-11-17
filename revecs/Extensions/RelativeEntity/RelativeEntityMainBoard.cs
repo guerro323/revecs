@@ -102,14 +102,16 @@ public class RelativeEntityMainBoard : BoardBase
             new RelativeParentEntityBoard(World)
         );
         
-        ChildComponentType[type.Handle] = World.RegisterComponent(
+        var childType = World.RegisterComponent(
             name + ":Target",
             new RelativeChildEntityBoard(World) {DescriptionType = type}
         );
 
+        ChildComponentType[type.Handle] = childType;
+
         ChildToBaseType[ChildComponentType[type.Handle].Handle] = type;
 
-        Console.WriteLine($"Registering {name} to child:{ChildComponentType[type.Handle].Handle}, itself:{type.Handle}");
+        Console.WriteLine($"Registering {name} to child:{ChildComponentType[type.Handle].Handle} ({childType}), itself:{type.Handle}");
         
         return type;
     }
