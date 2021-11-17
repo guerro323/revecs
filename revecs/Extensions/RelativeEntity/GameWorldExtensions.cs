@@ -29,7 +29,7 @@ public static class GameWorldExtensions
     public static DescriptionType GetDescriptionType(this RevolutionWorld world, ComponentType componentType)
     {
         var mainBoard = world.GetBoard<RelativeEntityMainBoard>(MainBoardName);
-        if (mainBoard.ChildToBaseType[componentType.Handle].Equals(default) == false)
+        if (mainBoard.ChildToBaseType[componentType.Handle].Handle > 0)
         {
             return new DescriptionType(
                 mainBoard.ChildToBaseType[componentType.Handle],
@@ -37,7 +37,7 @@ public static class GameWorldExtensions
             );
         }
 
-        if (mainBoard.ChildComponentType[componentType.Handle].Equals(default) == false)
+        if (mainBoard.ChildComponentType[componentType.Handle].Handle > 0)
         {
             return new DescriptionType(
                 componentType,

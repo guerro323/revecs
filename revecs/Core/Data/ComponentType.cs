@@ -29,6 +29,11 @@ namespace revecs.Core
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ComponentType<T> UnsafeCast<T>() => new(Handle);
+
+        public override string ToString()
+        {
+            return $"Component({Handle})";
+        }
     }
 
     public readonly struct ComponentType<T> : IEquatable<ComponentType<T>>
@@ -62,6 +67,11 @@ namespace revecs.Core
         public override int GetHashCode()
         {
             return Handle;
+        }
+        
+        public override string ToString()
+        {
+            return $"Component({Handle}, {typeof(T).Name})";
         }
     }
 }
