@@ -9,7 +9,7 @@ public static class GameWorldExtensions
     public static void AddRelativeEntityModule(this RevolutionWorld world)
     {
         if (world.GetBoardOrDefault(MainBoardName) != null)
-            throw new InvalidOperationException($"Couldn't add RelativeEntityModule");
+            return;
 
         var mainBoard = new RelativeEntityMainBoard(world);
         world.AddBoard(MainBoardName, mainBoard);
