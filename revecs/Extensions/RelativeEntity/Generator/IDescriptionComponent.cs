@@ -44,7 +44,7 @@ public const string WorldAccess_ValueType = ""UEntityHandle"";
                     ).Itself;
                 }
 
-                return existing;
+                return existing.UnsafeCast<UEntityHandle>();
             }
 
             public const bool DisableReferenceWrapper = true;
