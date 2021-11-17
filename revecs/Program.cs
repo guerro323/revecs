@@ -94,36 +94,7 @@ namespace revecs
         public static void Main()
         {
             using var runner = new OpportunistJobRunner(0.5f);
-            
-            var batches = new List<JobRequest>();
 
-            var sw0 = new Stopwatch();
-            sw0.Start();
-            for (var i = 0; i < 1_000; i++)
-            {
-                JobRequest b;
-                if ((i % 3) == 0)
-                    b = runner.Queue(new Batch01() {Passed = new bool[16]});
-                else if ((i % 3) == 1)
-                    b = runner.Queue(new Batch02() {Passed = new bool[16]});
-                else
-                    b = runner.Queue(new Batch03() {Passed = new bool[16]});
-                
-                batches.Add(b);
-            }
-            sw0.Stop();
-            Console.WriteLine($"Time  took to queue: {sw0.Elapsed.TotalMilliseconds}ms");
-            sw0.Reset();
-
-            var wait = runner.WaitBatches(batches);
-            var complete = runner.Queue(new WaitAndActJob<JobOnCompletion>(new(), CollectionsMarshal.AsSpan(batches)));
-
-            sw0.Start();
-            runner.CompleteBatch(complete);
-            runner.CompleteBatch(wait);
-            sw0.Stop();
-            Console.WriteLine($"Time took to complete {sw0.Elapsed.TotalMilliseconds}ms");
-            
             var count = 100_000;
             
             var entities = new UEntityHandle[count];

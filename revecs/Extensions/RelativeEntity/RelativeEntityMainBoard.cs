@@ -108,6 +108,9 @@ public class RelativeEntityMainBoard : BoardBase
         );
 
         ChildToBaseType[ChildComponentType[type.Handle].Handle] = type;
+
+        Console.WriteLine($"Registering {name} to child:{ChildComponentType[type.Handle]}, itself:{type.Handle}");
+        
         return type;
     }
 }
