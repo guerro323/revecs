@@ -6,7 +6,7 @@
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <TargetFramework>net6.0</TargetFramework>
         <LangVersion>preview</LangVersion>
-        <RootNamespace>Revecs</RootNamespace>
+        <RootNamespace>revecs</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>

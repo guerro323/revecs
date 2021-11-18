@@ -49,7 +49,7 @@ public class RelativeEntityMainBoard : BoardBase
             
             for (; prev < size; prev++)
             {
-                var column = columns[prev];
+                ref var column = ref columns[prev];
                 
                 var entitySize = entityBoard.CurrentSize.Value;
                 Array.Resize(ref column.children, entitySize);
@@ -75,14 +75,15 @@ public class RelativeEntityMainBoard : BoardBase
         ref var currentParent = ref columns[type.Handle].parent[child.Id];
         if (currentParent.Id != parent.Id)
         {
-            columns[type.Handle].children[currentParent.Id].Remove(child);
+            if (currentParent.Id > 0)
+                columns[type.Handle].children[currentParent.Id].Remove(child);
 
             currentParent = parent;
         }
 
         if (parent.Id <= 0)
             return false;
-
+        
         World.AddComponent(parent, type);
         World.AddComponent(child, ChildComponentType[type.Handle]);
 
@@ -109,8 +110,6 @@ public class RelativeEntityMainBoard : BoardBase
         ChildComponentType[type.Handle] = childType;
 
         ChildToBaseType[ChildComponentType[type.Handle].Handle] = type;
-
-        Console.WriteLine($"Registering {name} to child:{ChildComponentType[type.Handle].Handle} ({childType}), itself:{type.Handle}");
         
         return type;
     }
