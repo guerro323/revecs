@@ -83,6 +83,7 @@ public interface ISparseComponent : IRevolutionComponent
         }
 "";
 
+                bool Has[Type](in UEntityHandle handle) => throw new NotImplementedException();
                 ref readonly [TypeAddr] Read[Type](in UEntityHandle handle) => throw new NotImplementedException();
             }
             public interface IAdmin : IRevolutionCommand, IWrite, IRead

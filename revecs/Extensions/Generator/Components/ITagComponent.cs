@@ -53,12 +53,9 @@ public interface ITagComponent : IRevolutionComponent
         {
             return World.HasComponent(handle, [Type]Type);
         }
-
-        public ref readonly [TypeAddr] Read[Type](in UEntityHandle handle)
-        {
-            return ref World.GetComponentData(handle, [Type]Type);
-        }
 "";
+
+                bool Has[Type](in UEntityHandle handle) => throw new NotImplementedException();
             }
             public interface IAdmin : IRevolutionCommand, IRead
             {
@@ -67,9 +64,9 @@ public interface ITagComponent : IRevolutionComponent
 "";
 
                 public const string Body = @""
-        public UComponentReference Add[Type](in UEntityHandle handle, in [TypeAddr] data = default)
+        public UComponentReference Add[Type](in UEntityHandle handle)
         {
-            return World.AddComponent(handle, [Type]Type, data);
+            return World.AddComponent(handle, [Type]Type, default);
         }
 
         public bool Remove[Type](in UEntityHandle handle)
@@ -77,6 +74,9 @@ public interface ITagComponent : IRevolutionComponent
             return World.RemoveComponent(handle, [Type]Type);
         }
 "";
+
+                UComponentReference Add[Type](in UEntityHandle handle) => throw new NotImplementedException();
+                bool Remove[Type](in UEntityHandle handle) => throw new NotImplementedException();
             }
         }
 ";

@@ -24,6 +24,7 @@ public class RelativeEntityMainBoard : BoardBase
 
         void OnEntityResize(int prev, int size)
         {
+            var k = 0;
             foreach (ref var column in columns.AsSpan())
             {
                 Array.Resize(ref column.children, size);

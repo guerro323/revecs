@@ -1,9 +1,20 @@
 using revecs.Extensions.RelativeEntity.Generator;
+using revecs.Systems;
 
 namespace revecs.Tests;
 
 public partial class RelativeTest
 {
+    interface IRevolutionSystem
+    {
+        void Body();
+
+        void AddToSystemGroup(SystemGroup group)
+        {
+            
+        }
+    }
+    
     partial struct Test : IDescriptionComponent
     {
         

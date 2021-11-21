@@ -102,7 +102,7 @@ namespace revecs
     ///     <description>If true and the dependency was canceled or not queued, the system will not be run.</description>
     /// </item>
     /// </list>
-    [AttributeUsage(AttributeTargets.Method)]
+    [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
     internal class AddForeignDependencyAttribute : Attribute 
     {
         public readonly Type Type;

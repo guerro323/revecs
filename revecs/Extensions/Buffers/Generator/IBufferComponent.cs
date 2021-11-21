@@ -27,7 +27,7 @@ public interface IBufferComponent : IRevolutionComponent
 
             public const string AccessorAccess_FieldType = ""ComponentSetAccessor<BufferData<[TypeAddr]>>"";
             public const string AccessorAccess_Init = ""[field] = [world].AccessComponentSet([componentType].UnsafeCast<BufferData<[TypeAddr]>>());"";
-            public const string AccessorAccess_Access = ""[value] = [access] [field].FirstOrThrow([entity])"";
+            public const string AccessorAccess_Access = ""[value] = [field].FirstOrThrow([entity])"";
             public const string AccessorAccess_ValueType = ""BufferData<[TypeAddr]>"";
 
             public const string WorldAccess_Access = ""[value] = [access] [world].GetComponentData([entity], [componentType].UnsafeCast<BufferData<[TypeAddr]>>())"";

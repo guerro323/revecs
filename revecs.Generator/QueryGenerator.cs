@@ -792,7 +792,7 @@ using System.Runtime.InteropServices;
                     Fields();
                     Constructor();
 
-                    if (isHeaderlessQuery)
+                    if (isHeaderlessQuery && !isSingleton)
                     {
                         ImplementHeaderlessQuery();
                     }
