@@ -25,8 +25,8 @@ public interface IBufferComponent : IRevolutionComponent
 
             public const string Imports = ""using revecs.Core.Components.Boards;\nusing revecs.Extensions.Generator;\nusing revecs.Extensions.Buffers;"";
 
-            public const string AccessorAccess_FieldType = ""ComponentSetAccessor<BufferData<[TypeAddr]>>"";
-            public const string AccessorAccess_Init = ""[field] = [world].AccessComponentSet([componentType].UnsafeCast<BufferData<[TypeAddr]>>());"";
+            public const string AccessorAccess_FieldType = ""EntityComponentAccessor<BufferData<[TypeAddr]>>"";
+            public const string AccessorAccess_Init = ""[field] = [world].AccessEntityComponent([componentType].UnsafeCast<BufferData<[TypeAddr]>>());"";
             public const string AccessorAccess_Access = ""[field].FirstOrThrow([entity])"";
             public const string AccessorAccess_ValueType = ""BufferData<[TypeAddr]>"";
 
