@@ -23,5 +23,10 @@ namespace revecs.Core
         {
             return Row == other.Row && Version == other.Version;
         }
+
+        public override string ToString()
+        {
+            return $"EntitySafe({Row}; {Version})";
+        }
     }
 }

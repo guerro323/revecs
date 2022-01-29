@@ -129,10 +129,11 @@ namespace revecs
         {
             sb.Append(@"using revecs.Core;
 using revecs.Utility;
-using revecs.Query;
+using revecs.Querying;
 using revecs.Systems;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.ComponentModel;
 using revtask.Core;
 using revtask.Helpers;
 
@@ -181,6 +182,8 @@ using revtask.Helpers;
             
             //var interfaces = source.Header.Select(t => t.GetTypeName());*/
             //sb.AppendLine($"    partial struct {structName} : {string.Join(",\n            ", interfaces)}\n    {{");
+            if (structName.StartsWith("__"))
+                sb.Append("    [EditorBrowsable(EditorBrowsableState.Never)]");
             sb.AppendLine($"    partial struct {structName}\n    {{");
         }
 
@@ -235,7 +238,7 @@ using revtask.Helpers;
             
             sb.AppendLine($@"        public readonly RevolutionWorld World;
 
-        public {source.Name}(RevolutionWorld world)
+        public {source.StructureName ?? source.Name}(RevolutionWorld world)
         {{
             World = world;
 
@@ -319,7 +322,7 @@ using revtask.Helpers;
         EndNamespace();
         
         var fileName = $"{(source.Parent == null ? "" : $"{source.Parent.Name}.")}{source.Name}";
-        Context.AddSource($"{Path.GetFileNameWithoutExtension(source.FilePath)}.{fileName}", "#pragma warning disable\n" + sb.ToString());
+        Context.AddSource($"COMMAND.{Path.GetFileNameWithoutExtension(source.FilePath)}.{fileName}", "#pragma warning disable\n" + sb.ToString());
     }
     
     private void CreateCommands()
@@ -340,9 +343,11 @@ using revtask.Helpers;
 
                 var symbol = (INamedTypeSymbol) semanticModel.GetDeclaredSymbol(declaredStruct);
 
-                // is query
+                // is system (cancel if found)
+                var systemInterface = symbol!.AllInterfaces.FirstOrDefault(i => i.Name == "IRevolutionSystem");
+                // is command
                 var commandInterface = symbol!.AllInterfaces.FirstOrDefault(i => i.Name == "IRevolutionCommand");
-                if (commandInterface != null)
+                if (systemInterface == null && commandInterface != null)
                 {
                     Log(0, "Found Command: " + symbol.GetTypeName() + ", File: " + tree.FilePath);
                     

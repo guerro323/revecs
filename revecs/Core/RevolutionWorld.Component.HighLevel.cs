@@ -1,7 +1,9 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using revecs.Core.Components.Boards;
 using revecs.Core.Components.Boards.Bases;
 using revecs.Core.Components.Boards.Modifiers;
+using revecs.Utility;
 
 namespace revecs.Core
 {
@@ -23,43 +25,31 @@ namespace revecs.Core
         public SparseSetAccessor<T> AccessSparseSet<T>(ComponentType<T> type)
         {
             var board = ComponentTypeBoard.Boards[type.Handle];
-            if (board is not IComponentBoardHasGlobalReader globalReader)
-                throw new InvalidOperationException(
-                    $"{ComponentTypeBoard.Names[type.Handle]} doesn't support global span"
+            if (board is SparseSetComponentBoard sparseBoard)
+            {
+                return new SparseSetAccessor<T>(
+                    sparseBoard.EntityLink,
+                    sparseBoard.ComponentDataColumn.AsSpan().UnsafeCast<byte, T>()
                 );
+            }
 
-            return new SparseSetAccessor<T>(
-                GetEntityComponentLink(type),
-                globalReader.Read<T>()
-            );
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public ComponentSetAccessor<T> AccessComponentSet<T>(ComponentType<T> type)
-        {
-            var board = ComponentTypeBoard.Boards[type.Handle];
-            if (board is not IComponentBoardHasHandleReader handleReader)
-                throw new InvalidOperationException(
-                    $"{ComponentTypeBoard.Names[type.Handle]} doesn't support handle reader"
+            if (board is SparseSetManagedComponentBoard<T> managedBoard)
+            {
+                return new SparseSetAccessor<T>(
+                    managedBoard.EntityLink,
+                    managedBoard.ComponentDataColumn.AsSpan()
                 );
+            }
 
-            return new ComponentSetAccessor<T>(
-                GetEntityComponentLink(type),
-                handleReader
-            );
+            throw new InvalidOperationException("invalid board found");
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public EntityComponentAccessor<T> AccessEntityComponent<T>(ComponentType<T> type)
         {
             var board = ComponentTypeBoard.Boards[type.Handle];
-            if (board is not EntityComponentBoardBase entityBoard)
-                throw new InvalidOperationException(
-                    $"{ComponentTypeBoard.Names[type.Handle]} is not an EntityComponentBoard"
-                );
-
             return new EntityComponentAccessor<T>(
-                entityBoard
+                board
             );
         }
     }

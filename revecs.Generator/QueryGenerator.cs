@@ -5,13 +5,32 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace revecs.Generator;
 
+public struct QueryArgument
+{
+    public enum EModifier
+    {
+        Unknown,
+        All,
+        None,
+        Or
+    }
+
+    public INamedTypeSymbol Symbol;
+    public string PublicName;
+    
+    public bool CanWrite;
+    public bool IsOption;
+    public EModifier Modifier;
+    public ComponentGenerator.CustomAccessResult Custom;
+}
+
 public record QuerySource
 (
     INamedTypeSymbol? Parent,
     string? Namespace,
     string Name,
     string FilePath,
-    INamedTypeSymbol[] Header,
+    QueryArgument[] Arguments,
     bool IsRecord = false,
     string? StructureName = null,
     // system usage
@@ -24,7 +43,6 @@ public record QuerySource
 
 public class QueryGenerator
 {
-    public const string OptionalType = "Optional";
     public const string SingletonType = "Singleton";
     
     public readonly GeneratorExecutionContext Context;
@@ -116,17 +134,27 @@ namespace revecs
         var sb = new StringBuilder();
         sb.Append(@"using revecs.Core;
 using revecs.Utility;
-using revecs.Query;
+using revecs.Querying;
 using revecs.Systems;
 using revtask.Core;
 using revtask.Helpers;
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.ComponentModel;
+
 ");
 
-        var isSingleton = source.Header.Any(t => t.Name is SingletonType or $"{SingletonType}Attribute");
-
+        foreach (var arg in source.Arguments)
+        {
+            if (arg.Custom is {Usings: { } imports})
+            {
+                sb.Append($"// Imports from {arg.Symbol.Name}");
+                sb.AppendLine(imports);
+                sb.AppendLine();
+            }
+        }
+        
         void BeginNamespace()
         {
             if (source.Namespace is { } ns)
@@ -164,78 +192,17 @@ using System.Runtime.InteropServices;
         {
             foreach (var _ in parentTypes) sb.AppendLine("}");
         }
-
-        var arguments = new List<QueryArgument>();
-        var isHeaderlessQuery = true;
         
-        void CreateArguments()
-        {
-            foreach (var arg in source.Header)
-            {
-                var queryArgument = new QueryArgument
-                {
-                    Symbol = arg,
-                    IsOption = true
-                };
-
-                switch (arg.Name)
-                {
-                    case "Write":
-                        isHeaderlessQuery = false;
-
-                        queryArgument.CanWrite = true;
-                        queryArgument.IsOption = false;
-                        queryArgument.Symbol = (INamedTypeSymbol) arg.TypeArguments[0];
-                        queryArgument.Modifier = QueryArgument.EModifier.All;
-                        // Custom after we set symbol
-                        queryArgument.Custom = ComponentGenerator.GetCustomAccess(Compilation, queryArgument.Symbol);
-
-                        break;
-                    case "Read":
-                        isHeaderlessQuery = false;
-                        
-                        queryArgument.IsOption = false;
-                        queryArgument.Symbol = (INamedTypeSymbol) arg.TypeArguments[0];
-                        queryArgument.Modifier = QueryArgument.EModifier.All;
-                        // Custom after we set symbol
-                        queryArgument.Custom = ComponentGenerator.GetCustomAccess(Compilation, queryArgument.Symbol);
-                        break;
-
-                    case "With":
-                        queryArgument.IsOption = true;
-                        queryArgument.Modifier = QueryArgument.EModifier.All;
-                        queryArgument.Symbol = (INamedTypeSymbol) arg.TypeArguments[0];
-                        break;
-                    case "None":
-                        queryArgument.IsOption = true;
-                        queryArgument.Modifier = QueryArgument.EModifier.None;
-                        queryArgument.Symbol = (INamedTypeSymbol) arg.TypeArguments[0];
-                        break;
-                    case "Or":
-                        queryArgument.IsOption = true;
-                        queryArgument.Modifier = QueryArgument.EModifier.Or;
-                        queryArgument.Symbol = (INamedTypeSymbol) arg.TypeArguments[0];
-                        break;
-                }
-
-                arguments.Add(queryArgument);
-            }
-
-            foreach (var a in arguments)
-            {
-                Log(4, $"{a.Symbol.Name}, ReadOnly: {!a.CanWrite}, Modifier: {a.Modifier}");
-                if (a.Custom is {Usings: { } imports})
-                {
-                    sb.Insert(0, imports);
-                }
-            }
-        }
+        var isHeaderlessQuery = source.Arguments.Any(c => !c.IsOption) == false;
+        isHeaderlessQuery = false;
 
         void BeginStruct()
         {
             var structName = source.StructureName ?? source.Name;
             
             sb.Append("    ");
+            if (structName.StartsWith("__"))
+                sb.Append("[EditorBrowsable(EditorBrowsableState.Never)]");
             sb.AppendFormat("partial {1} struct {0}\n    {{\n", structName, source.IsRecord ? "record" : string.Empty);
         }
 
@@ -249,7 +216,7 @@ using System.Runtime.InteropServices;
             sb.AppendLine("        public readonly ArchetypeQuery Query;");
             sb.AppendLine("        public readonly SwapDependency EntityDependency;");
 
-            foreach (var arg in arguments)
+            foreach (var arg in source.Arguments)
             {
                 if (arg.IsOption)
                     continue;
@@ -267,7 +234,7 @@ using System.Runtime.InteropServices;
         void Constructor()
         {
             var expr = new StringBuilder();
-            foreach (var arg in arguments)
+            foreach (var arg in source.Arguments)
             {
                 if (arg.IsOption)
                     continue;
@@ -285,7 +252,7 @@ using System.Runtime.InteropServices;
             var constructorAll = new List<string>();
             var constructorOr = new List<string>();
             var constructorNone = new List<string>();
-            foreach (var arg in arguments)
+            foreach (var arg in source.Arguments)
             {
                 if (arg.Modifier == QueryArgument.EModifier.Unknown)
                     continue;
@@ -306,7 +273,7 @@ using System.Runtime.InteropServices;
             }
 
             sb.Append($@"
-        public {source.Name}(RevolutionWorld world)
+        public {source.StructureName ?? source.Name}(RevolutionWorld world)
         {{
             Query = new ArchetypeQuery(world
                 , all: new ComponentType[] 
@@ -350,7 +317,7 @@ using System.Runtime.InteropServices;
             if (!writeEntity)
                 reader.AppendLine("            EntityDependency.AddReader(request);");
 
-            foreach (var arg in arguments)
+            foreach (var arg in source.Arguments)
             {
                 if (arg.IsOption)
                     continue;
@@ -390,150 +357,6 @@ using System.Runtime.InteropServices;
 ");
         }
         
-        void ImplementSingleton()
-        {
-            sb.AppendLine(@"
-        public UEntityHandle Entity { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => Query.Any() ? Query.EntityAt(0) : default; }");
-            
-            
-            var argumentCount = arguments.Count(a => !a.IsOption);
-            // UEntityHandle Entity;
-            if (argumentCount == 0)
-            {
-                // TODO: implement
-                ZeroArg();
-            }
-            // Only one argument, so flatten and put all the fields onto the query itself.
-            // (With a way to retrieve the full component as the third option)
-            //
-            // UEntityHandle Entity;
-            // (same as how a R* component work)
-            // ComponentVariable1 Variable1;
-            // ComponentVariable2 Variable2;
-            // ...
-            else if (argumentCount == 1)
-            {
-                OneArg();
-            }
-            // More than one arguments, each type accessible via field.
-            //
-            // UEntityHandle Entity;
-            // Component1 Component1;
-            //      ComponentVariable1 Variable1;
-            // Component2 Component2;
-            //      ComponentVariable1 Variable1;
-            // ...
-            else
-            {
-                MultipleArg();
-            }
-
-            void ZeroArg()
-            {
-                // literally nothing
-            }
-
-            void OneArg()
-            {
-                // we do that since we will show the component and flattened fields
-                MultipleArg();
-
-                foreach (var arg in arguments)
-                {
-                    if (arg.IsOption)
-                        continue;
-                    
-                    if (arg.Custom.DisableReferenceWrapper)
-                        continue;
-
-                    var fields = new StringBuilder();
-                    foreach (var f in arg.Symbol.GetMembers())
-                    {
-                        var ro = arg.CanWrite ? string.Empty : " readonly";
-
-                        switch (f)
-                        {
-                            case IFieldSymbol fieldSymbol:
-                                // from property
-                                if (fieldSymbol.IsImplicitlyDeclared)
-                                {
-                                    continue;
-                                }
-
-                                fields.Append($@"
-        public ref{ro} {fieldSymbol.Type.GetTypeName()} {fieldSymbol.Name} 
-        {{ 
-            [MethodImpl(MethodImplOptions.AggressiveInlining)] get => ref {arg.Symbol.Name}.{fieldSymbol.Name}; 
-        }}
-");
-                                break;
-                            case IPropertySymbol propertySymbol:
-                                var attr = "[MethodImpl(MethodImplOptions.AggressiveInlining)]";
-
-                                string get = "", set = "";
-                                if (propertySymbol.GetMethod != null)
-                                    get = $"{attr} get => {arg.Symbol.Name}.{propertySymbol.Name};";
-                                if (propertySymbol.SetMethod != null || propertySymbol.ReturnsByRef)
-                                    set = $"{attr} set => {arg.Symbol.Name}.{propertySymbol.Name} = value;";
-                                
-                                fields.Append($@"
-        public {propertySymbol.Type.GetTypeName()} {propertySymbol.Name} 
-        {{
-            {get} 
-            {set} 
-        }}
-");
-                                break;
-                        }
-                    }
-
-                    sb.AppendLine(fields.ToString());
-                }
-            }
-
-            void MultipleArg()
-            {
-                foreach (var arg in arguments)
-                {
-                    if (arg.IsOption)
-                        continue;
-
-                    var access = "ref";
-                    if (!arg.CanWrite)
-                        access += " readonly";
-                    
-                    if (arg.Custom.ViaWorld is not { } viaWorld)
-                    {
-                        sb.AppendLine($@"
-        public {access} {arg.Symbol.GetTypeName()} {arg.Symbol.Name}
-        {{ 
-            [MethodImpl(MethodImplOptions.AggressiveInlining)] get
-            {{
-                 return ref (Query.Any() 
-                        ? ref Query.World.GetComponentData(Query.EntityAt(0), {arg.Symbol.Name}Type.UnsafeCast<{arg.Symbol.GetTypeName()}>())
-                        : ref Unsafe.NullRef<{arg.Symbol.GetTypeName()}>()); 
-            }}
-        }}");
-                    }
-                    else
-                    {
-                        sb.AppendLine($@"
-        public {access} {viaWorld.ValueType} {arg.Symbol.Name}
-        {{ 
-            [MethodImpl(MethodImplOptions.AggressiveInlining)] get
-            {{
-                if (!Query.Any())
-                    return ref Unsafe.NullRef<{viaWorld.ValueType}>();
-
-                ref var {viaWorld.GetAccess("value", "Query.World", "Query.EntityAt(0)", $"{arg.Symbol.Name}Type", "ref")};
-                return ref value;
-            }}
-        }}");
-                    }
-                }
-            }
-        }
-
         void ImplementForeach()
         {
             sb.Append($@"
@@ -544,7 +367,7 @@ using System.Runtime.InteropServices;
             var iterationInit = new StringBuilder();
             var accessorFields = new StringBuilder();
             var accessorInit = new StringBuilder();
-            foreach (var arg in arguments)
+            foreach (var arg in source.Arguments)
             {
                 if (arg.IsOption)
                     continue;
@@ -563,20 +386,9 @@ using System.Runtime.InteropServices;
                     accessorInit.AppendLine(
                         $"{accessor.GetInit($"Accessor{arg.Symbol.Name}", $"self.{arg.Symbol.Name}Type", "_world")}"
                     );
-
-                    // If wrapper is disabled, then it's a copy
-                    // ( pls C# team, introduce ByRef values :( )
-                    var iterationAccess = arg.Custom.DisableReferenceWrapper
-                        ? $"{arg.Symbol.Name}ValueRef"
-                        : $"new R{arg.Symbol.Name} {{ Span = MemoryMarshal.CreateSpan(ref Accessor{arg.Symbol.Name}[iter.Handle], 1) }}";
-
-                    var declare = arg.Custom.DisableReferenceWrapper
-                        ? "var"
-                        : "ref var";
                     
                     iterationInit.Append($@"
-                    {declare} {accessor.GetAccess($"{arg.Symbol.Name}ValueRef", $"Accessor{arg.Symbol.Name}", "iter.Handle", "ref")};
-                    iter.{arg.Symbol.Name} = {iterationAccess};
+                    iter.Accessor{arg.Symbol.Name} = Accessor{arg.Symbol.Name};
 ");
                 }
                 else
@@ -592,7 +404,7 @@ using System.Runtime.InteropServices;
 
                     iterationInit.Append("                    ");
                     iterationInit.AppendLine(
-                        $"iter.{arg.Symbol.Name} = new R{arg.Symbol.Name} {{ Span = MemoryMarshal.CreateSpan(ref Accessor{arg.Symbol.Name}[iter.Handle], 1) }}; ");
+                        $"iter.Accessor{arg.Symbol.Name} = Accessor{arg.Symbol.Name}; ");
                 }
             }
 
@@ -637,132 +449,40 @@ using System.Runtime.InteropServices;
         public ref struct Iteration
         {
 ");
-            var deconstructOut = new StringBuilder();
-            var deconstruct = new List<string>();
             var iterationFields = new StringBuilder("            public UEntityHandle Handle;\n");
-            foreach (var arg in arguments)
+            foreach (var arg in source.Arguments)
             {
                 if (arg.IsOption || arg.Modifier == QueryArgument.EModifier.None)
                     continue;
 
-                if (!(arg.Custom is {DisableReferenceWrapper: true}))
+                var accessorTypeName = $"EntityComponentAccessor<{arg.Symbol.GetTypeName()}>";
+                var typeName = arg.Symbol.GetTypeName();
+                if (arg.Custom is {ViaAccessor: { } viaAccessor})
                 {
-                    var fields = new StringBuilder();
-                    foreach (var f in arg.Symbol.GetMembers())
-                    {
-                        var ro = arg.CanWrite ? string.Empty : " readonly";
-
-                        switch (f)
-                        {
-                            case IFieldSymbol fieldSymbol:
-                                // from property
-                                if (fieldSymbol.IsImplicitlyDeclared)
-                                {
-                                    continue;
-                                }
-
-                                fields.Append($@"
-            public ref{ro} {fieldSymbol.Type.GetTypeName()} {fieldSymbol.Name} 
-            {{ 
-                [MethodImpl(MethodImplOptions.AggressiveInlining)] get => ref __ref.{fieldSymbol.Name}; 
-            }}
-");
-                                break;
-                            case IPropertySymbol propertySymbol:
-                                var attr = "[MethodImpl(MethodImplOptions.AggressiveInlining)]";
-
-                                string get = "", set = "";
-                                if (propertySymbol.GetMethod != null)
-                                    get = $"{attr} get => __ref.{propertySymbol.Name};";
-                                if (propertySymbol.SetMethod != null || propertySymbol.ReturnsByRef)
-                                    set = $"{attr} set => __ref.{propertySymbol.Name} = value;";
-
-                                fields.Append($@"
-            public {propertySymbol.Type.GetTypeName()} {propertySymbol.Name} 
-            {{
-                {get} 
-                {set} 
-            }}
-");
-                                break;
-                        }
-                    }
-
-                    sb.Append($@"
-        public ref struct R{arg.Symbol.Name}
-        {{
-            public Span<{arg.Symbol.GetTypeName()}> Span;
-
-            public ref {arg.Symbol.GetTypeName()} __ref {{ [MethodImpl(MethodImplOptions.AggressiveInlining)] get => ref MemoryMarshal.GetReference(Span); }}
-
-            {fields}
-
-            public override string ToString() => __ref.ToString();
-        }}
-        ");
-                    deconstruct.Add($"out R{arg.Symbol.Name} {arg.Symbol.Name}");
-                    deconstructOut.Append($"                {arg.Symbol.Name} = this.{arg.Symbol.Name};\n");
-                    iterationFields.AppendLine($"            public R{arg.Symbol.Name} {arg.Symbol.Name};");
+                    accessorTypeName = viaAccessor.FieldType ?? accessorTypeName;
+                    typeName = viaAccessor.ValueType ?? typeName;
                 }
-                else
-                {
-                    var typeName = arg.Symbol.GetTypeName();
-                    if (arg.Custom is {ViaAccessor: { } viaAccessor})
-                    {
-                        typeName = (viaAccessor.ValueType ?? typeName);
-                    }
 
-                    deconstruct.Add($"out {typeName} {arg.Symbol.Name}");
-                    deconstructOut.Append($"                {arg.Symbol.Name} = this.{arg.Symbol.Name};\n");
-                    iterationFields.AppendLine($"            public {typeName} {arg.Symbol.Name};");
-                }
+                var perm = arg.Custom.DisableReferenceWrapper
+                    ? string.Empty
+                    : arg.CanWrite
+                        ? "ref"
+                        : "ref readonly";
+                var accessPerm = arg.Custom.DisableReferenceWrapper
+                    ? string.Empty
+                    : "ref";
+
+                var access = arg.Custom is {ViaAccessor: { } accessor}
+                    ? $"{accessor.GetAccess($"Accessor{arg.Symbol.Name}", "Handle", accessPerm)};"
+                    : $"{accessPerm} Accessor{arg.Symbol.Name}[handle];";
+
+                iterationFields.AppendLine($"            [EditorBrowsable(EditorBrowsableState.Never)] public {accessorTypeName} Accessor{arg.Symbol.Name};\n" +
+                                           $"            public {perm} {typeName} {arg.PublicName} => {access}\n");
             }
 
             iteration.Append($@"{iterationFields}
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public void Deconstruct(out UEntityHandle handle, {string.Join(',', deconstruct)})
-            {{
-                handle = this.Handle;
-{deconstructOut}            }}
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public void Deconstruct({string.Join(',', deconstruct)})
-            {{
-{deconstructOut}            }}
         }}");
             sb.AppendLine(iteration.ToString());
-        }
-
-        void CreateInterface()
-        {
-            var validArgs = arguments
-                .Where(a => !a.IsOption)
-                .Select(a => $"T{a.Symbol.Name}")
-                .ToArray();
-            
-            if (_queryCount.Contains((source.Namespace, validArgs.Length)))
-                return;
-
-            var interfaceSb = new StringBuilder();
-            interfaceSb.AppendLine($"namespace {source.Namespace} {{");
-            interfaceSb.Append($"    internal interface IQuery");
-            if (validArgs.Any())
-            {
-                interfaceSb.Append('<');
-                interfaceSb.Append(
-                    string.Join(", ", validArgs)
-                );
-                interfaceSb.AppendLine(">");
-            }
-
-            interfaceSb.AppendLine("    {}");
-            interfaceSb.AppendLine("}");
-            
-            _queryCount.Add((source.Namespace, validArgs.Length));
-            
-            var fileName = $"{source.Namespace ?? "undefined"}.QueryInterfaceL{validArgs.Length}";
-            Context.AddSource($"{fileName}", "#pragma warning disable\n" + interfaceSb.ToString());
         }
 
         void AdditionalFunctions()
@@ -779,6 +499,17 @@ using System.Runtime.InteropServices;
         {{
             return Query.GetEntityCount();
         }}
+
+        public Iteration First()
+        {{
+            if (!Any()) {{
+                return default;
+            }}
+
+            var enumerator = GetEnumerator();
+            enumerator.MoveNext();
+            return enumerator.Current;
+        }}
 ");
         }
 
@@ -786,46 +517,36 @@ using System.Runtime.InteropServices;
         {
             BeginParentTypes();
             {
-                CreateArguments();
                 BeginStruct();
                 {
                     Fields();
                     Constructor();
 
-                    if (isHeaderlessQuery && !isSingleton)
+                    if (isHeaderlessQuery)
                     {
                         ImplementHeaderlessQuery();
                     }
                     else
                     {
-                        if (isSingleton)
-                        {
-                            ImplementSingleton();
-                        }
-                        else
-                        {
-                            ImplementForeach();
-                        }
+                        ImplementForeach();
                     }
-                    
+
                     Dependency();
                     AdditionalFunctions();
                 }
                 EndStruct();
             }
             EndParentTypes();
-
-            CreateInterface();
         }
         EndNamespace();
         
         var fileName = $"{(source.Parent == null ? "" : $"{source.Parent.Name}.")}{source.Name}";
-        Context.AddSource($"{Path.GetFileNameWithoutExtension(source.FilePath)}.{fileName}", sb.ToString());
+        Context.AddSource($"QUERY.{Path.GetFileNameWithoutExtension(source.FilePath)}.{fileName}", sb.ToString());
     }
 
     public void CreateQueries()
     {
-        foreach (var tree in Compilation.SyntaxTrees)
+        /*foreach (var tree in Compilation.SyntaxTrees)
         {
             var semanticModel = Compilation.GetSemanticModel(tree);
             foreach (var declaredStruct in tree
@@ -867,24 +588,6 @@ using System.Runtime.InteropServices;
                     GenerateQuery(source);
                 }
             }
-        }
-    }
-
-    public struct QueryArgument
-    {
-        public enum EModifier
-        {
-            Unknown,
-            All,
-            None,
-            Or
-        }
-
-        public INamedTypeSymbol Symbol;
-        public bool CanWrite;
-        public bool IsOption;
-        public EModifier Modifier;
-
-        public ComponentGenerator.CustomAccessResult Custom;
+        }*/
     }
 }

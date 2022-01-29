@@ -7,24 +7,20 @@ namespace revecs.Core
     public partial class RevolutionWorld : IDisposable
     {
         public BoardMap BoardMap;
-
-        public readonly BatchRunnerBoard RunnerBoard;
+        
         public readonly ArchetypeBoard ArchetypeBoard;
         public readonly ArchetypeUpdateBoard ArchetypeUpdateBoard;
         public readonly ComponentTypeBoard ComponentTypeBoard;
         public readonly EntityBoard EntityBoard;
-        public readonly EntityComponentLinkBoard EntityComponentLinkBoard;
-
-        public RevolutionWorld() : this(new OpportunistJobRunner(0)) {}
+        public readonly EntityHasComponentBoard EntityHasComponentBoard;
         
-        public RevolutionWorld(IJobRunner runner)
+        public RevolutionWorld()
         {
             BoardMap = BoardMap.Create();
-
-            AddBoard("Runner", RunnerBoard = new BatchRunnerBoard(runner, this));
+            
             AddBoard("Entity", EntityBoard = new EntityBoard(this));
             AddBoard("ComponentType", ComponentTypeBoard = new ComponentTypeBoard(this));
-            AddBoard("EntityComponentLink", EntityComponentLinkBoard = new EntityComponentLinkBoard(this));
+            AddBoard("EntityHasComponentBoard", EntityHasComponentBoard = new EntityHasComponentBoard(this));
             AddBoard("Archetype", ArchetypeBoard = new ArchetypeBoard(this));
             AddBoard("ArchetypeUpdate", ArchetypeUpdateBoard = new ArchetypeUpdateBoard(this));
         }

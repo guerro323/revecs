@@ -22,7 +22,7 @@ public interface ISparseComponent : IRevolutionComponent
 
             public const string AccessorAccess_FieldType = ""SparseSetAccessor<[TypeAddr]>"";
             public const string AccessorAccess_Init = ""[field] = [world].AccessSparseSet<[TypeAddr]>([componentType].UnsafeCast<[TypeAddr]>());"";
-            public const string AccessorAccess_Access = ""[value] = [access] [field][[entity]]"";
+            public const string AccessorAccess_Access = ""[access] [field][[entity]]"";
             public const string AccessorAccess_ValueType = ""[TypeAddr]"";
 
             public const string WorldAccess_Access = ""[value] = [access] [world].GetComponentData([entity], [componentType].UnsafeCast<[TypeAddr]>())"";
@@ -89,9 +89,9 @@ public interface ISparseComponent : IRevolutionComponent
             public interface IAdmin : IRevolutionCommand, IWrite, IRead
             {
                 public const string Body = @""
-        public UComponentReference Add[Type](in UEntityHandle handle, in [TypeAddr] data = default)
+        public void Add[Type](in UEntityHandle handle, in [TypeAddr] data = default)
         {
-            return World.AddComponent(handle, [Type]Type, data);
+            World.AddComponent(handle, [Type]Type, data);
         }
 
         public bool Remove[Type](in UEntityHandle handle)
@@ -100,7 +100,7 @@ public interface ISparseComponent : IRevolutionComponent
         }
 "";
 
-                UComponentReference Add[Type](in UEntityHandle handle, in [TypeAddr] data = default) => throw new NotImplementedException();
+                void Add[Type](in UEntityHandle handle, in [TypeAddr] data = default) => throw new NotImplementedException();
                 
                 bool Remove[Type](in UEntityHandle handle) => throw new NotImplementedException();
             }

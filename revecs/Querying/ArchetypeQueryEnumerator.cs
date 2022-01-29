@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 using revecs.Core;
 using revecs.Core.Boards;
 
-namespace revecs.Query;
+namespace revecs.Querying;
 
 // TODO: option without ref struct (async usage)
 public unsafe ref struct ArchetypeQueryEnumerator

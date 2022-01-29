@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using revecs.Core;
 using revecs.Core.Components;
@@ -8,105 +9,72 @@ using revecs.Extensions.Buffers;
 using revecs.Extensions.EntityLayout;
 using revecs.Extensions.LinkedEntity;
 using revecs.Extensions.RelativeEntity;
+using revecs.Querying;
 using revtask.Core;
 using revtask.Helpers;
 using revtask.OpportunistJobRunner;
 
 namespace revecs
 {
-    public class Program
+    public unsafe class Program
     {
-        struct Batch01 : IJob
+        public static int SuperValue = 1;
+
+        public static void TryOut(out int val)
         {
-            public bool[] Passed;
-        
-            public int SetupJob(JobSetupInfo info)
-            {
-                return Passed.Length;
-            }
-
-            public void Execute(IJobRunner runner, JobExecuteInfo info)
-            {
-                Passed[info.Index] = true;
-            }
-        }
-        
-        struct Batch02 : IJob
-        {
-            public bool[] Passed;
-        
-            public int SetupJob(JobSetupInfo info)
-            {
-                return Passed.Length;
-            }
-
-            public void Execute(IJobRunner runner, JobExecuteInfo info)
-            {
-                Passed[info.Index] = true;
-            }
-        }
-        
-        struct Batch03 : IJob, IJobExecuteOnCondition, IJobExecuteOnComplete
-        {
-            public bool[] Passed;
-        
-            public int SetupJob(JobSetupInfo info)
-            {
-                return Passed.Length;
-            }
-
-            public void Execute(IJobRunner runner, JobExecuteInfo info)
-            {
-                if (!Passed[info.Index])
-                    throw new InvalidOperationException();
-            }
-
-            public void OnComplete(IJobRunner runner, Exception? exception)
-            {
-                //Console.WriteLine("completed");
-            }
-
-            public bool CanExecute(IJobRunner runner, JobExecuteInfo info)
-            {
-                if (!Passed[info.Index])
-                {
-                    Passed[info.Index] = true;
-                    return false;
-                }
-
-                return true;
-            }
-        }
-        
-        struct JobOnCompletion : IJob
-        {
-            public int SetupJob(JobSetupInfo info)
-            {
-                return 1;
-            }
-
-            public void Execute(IJobRunner runner, JobExecuteInfo info)
-            {
-                Console.WriteLine("On Completion");
-            }
+            Unsafe.SkipInit(out val);
+            Console.WriteLine((IntPtr) Unsafe.AsPointer(ref Unsafe.Add(ref val, new IntPtr(-8))));
+            
+            val = ref SuperValue;
+            Console.WriteLine((IntPtr) Unsafe.AsPointer(ref val));
         }
         
         public static void Main()
         {
+            throw null;
+            
+            //ref var val = ref Unsafe.NullRef<int>();
+            var val = 0;
+            Console.WriteLine((IntPtr) Unsafe.AsPointer(ref Unsafe.Add(ref val, new IntPtr(0))));
+
+            var offset = new IntPtr(-0);
+            Console.WriteLine((IntPtr) Unsafe.AsPointer(ref Unsafe.Add(ref val, offset)));
+
+            var ptr = (IntPtr) Unsafe.AsPointer(ref SuperValue);
+            Unsafe.Copy(Unsafe.AsPointer(ref Unsafe.Add(ref val, offset)), ref ptr);
+            SuperValue = 69;
+            
+            //TryOut(out val);
+            Console.WriteLine(val);
+            val = 42;
+            Console.WriteLine(val);
+            Console.WriteLine(SuperValue);
+        }
+        
+        public static void AMain()
+        {
+            var proco = Process.Start(
+                new ProcessStartInfo(
+                    "nim", 
+                    "--eval:\"import macros; echo parseExpr(\"\"echo bonjour\"\").treeRepr\" ")
+                {
+                    RedirectStandardOutput = true
+                }
+            );
+            Console.WriteLine(proco.StandardOutput.ReadToEnd());
+
             using var runner = new OpportunistJobRunner(0.5f);
 
             var count = 100_000;
             
             var entities = new UEntityHandle[count];
-            var componentOut = new UComponentReference[count];
 
             var sw = new Stopwatch();
 
             var lowestCreateEntity = TimeSpan.MaxValue;
             var lowestCreateEntityBatched = TimeSpan.MaxValue;
             var lowestAddComponent = TimeSpan.MaxValue;
-            var lowestAddComponentBatched = TimeSpan.MaxValue;
-            
+
             for (var i = 0; i < 100; i++)
             {
                 sw.Restart();
@@ -128,13 +96,7 @@ namespace revecs
 
                 if (lowestAddComponent > sw.Elapsed)
                     lowestAddComponent = sw.Elapsed;
-                
-                sw.Reset();
-                AddComponentBatched(sw, entities, componentOut);
 
-                if (lowestAddComponentBatched > sw.Elapsed)
-                    lowestAddComponentBatched = sw.Elapsed;
-                
                 if ((i % 10) == 0)
                     Thread.Sleep(10);
 
@@ -157,7 +119,7 @@ namespace revecs
                     Console.WriteLine(f);
                 }
 
-                var accessor = world.AccessComponentSet(bufferType.List);
+                var accessor = world.AccessEntityComponent(bufferType.List);
                 ref var bufferRef = ref accessor.FirstOrThrow(ent);
 
                 foreach (var f in bufferRef)
@@ -180,7 +142,7 @@ namespace revecs
                 world.SetLink(d, a, true);
                 world.SetLink(c, b, false);
                 
-                //world.DestroyEntity(a);
+                world.DestroyEntity(a);
 
                 Console.WriteLine($"a: {world.Exists(a)} {world.ReadParents(a).Length} {world.ReadChildren(a).Length}");
                 Console.WriteLine($"b: {world.Exists(b)} {world.ReadParents(b).Length} {world.ReadChildren(b).Length}");
@@ -296,7 +258,6 @@ namespace revecs
             Console.WriteLine($"CreateEntity - {lowestCreateEntity.TotalMilliseconds}ms");
             Console.WriteLine($"CreateEntityBatched - {lowestCreateEntityBatched.TotalMilliseconds}ms");
             Console.WriteLine($"AddComponent - {lowestAddComponent.TotalMilliseconds}ms");
-            Console.WriteLine($"AddComponentBatched - {lowestAddComponentBatched.TotalMilliseconds}ms");
         }
 
         private static void CreateEntity(int length)
@@ -304,7 +265,7 @@ namespace revecs
             var world = new RevolutionWorld();
             for (var i = 0; i < length; i++)
             {
-                world.CreateEntity();
+                world.CreateEntity(); 
             }
         }
 
@@ -326,19 +287,7 @@ namespace revecs
                 world.AddComponent(ent, positionType);
             sw.Stop();
         }
-
-        private static void AddComponentBatched(Stopwatch sw, UEntityHandle[] entities, UComponentReference[] output)
-        {
-            var world = new RevolutionWorld();
-            world.CreateEntities(entities);
-
-            var positionType = world.RegisterComponent<SparseComponentSetup<Position>>();
- 
-            sw.Start();
-            world.AddComponentBatched(entities, output, positionType);
-            sw.Stop();
-        }
-
+        
         private struct Position
         {
             public Vector3 Value;

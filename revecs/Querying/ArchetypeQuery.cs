@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 using revecs.Core;
 using revghost.Shared.Threading;
 
-namespace revecs.Query;
+namespace revecs.Querying;
 
 public class ArchetypeQuery : IDisposable
 {
@@ -122,11 +122,10 @@ public class ArchetypeQuery : IDisposable
     public bool Any()
     {
         update();
-        
         foreach (var arch in CollectionsMarshal.AsSpan(_matchedArchetypes))
             if (!World.ArchetypeBoard.GetEntities(arch).IsEmpty)
                 return true;
-
+        
         return false;
     }
 

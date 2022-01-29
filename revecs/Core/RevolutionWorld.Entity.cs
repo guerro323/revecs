@@ -66,7 +66,7 @@ namespace revecs.Core
             {
                 foreach (ref readonly var compType in ComponentTypeBoard.All)
                 {
-                    if (EntityComponentLinkBoard.GetColumn(compType)[entity.Id].Null)
+                    if (!EntityHasComponentBoard.GetColumn(compType)[entity.Id])
                         continue;
 
                     RemoveComponent(entity, compType);

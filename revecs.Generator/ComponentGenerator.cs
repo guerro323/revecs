@@ -46,10 +46,9 @@ public class ComponentGenerator
                 .Replace("[componentType]", componentType, StringComparison.InvariantCultureIgnoreCase);
         }
 
-        public string GetAccess(string valueName, string fieldName, string entityName, string access)
+        public string GetAccess(string fieldName, string entityName, string access)
         {
             return Access
-                .Replace("[value]", valueName, StringComparison.InvariantCultureIgnoreCase)
                 .Replace("[field]", fieldName, StringComparison.InvariantCultureIgnoreCase)
                 .Replace("[access]", access, StringComparison.InvariantCultureIgnoreCase)
                 .Replace("[entity]", entityName, StringComparison.InvariantCultureIgnoreCase);
@@ -266,7 +265,7 @@ namespace revecs
         {
             sb.Append(@"using revecs.Core;
 using revecs.Utility;
-using revecs.Query;
+using revecs.Querying;
 using revecs.Systems;
 using System;
 using System.Runtime.CompilerServices;
@@ -377,7 +376,7 @@ using revtask.Helpers;
         var fileName = $"{(source.Parent == null ? "" : $"{source.Parent.Name}.")}{source.Name}";
         FinalMap[fileName] = sb.ToString();
 
-        Context.AddSource($"{Path.GetFileNameWithoutExtension(source.FilePath)}.{fileName}",
+        Context.AddSource($"COMPONENT.{Path.GetFileNameWithoutExtension(source.FilePath)}.{fileName}",
             "#pragma warning disable\n" + sb.ToString());
     }
 

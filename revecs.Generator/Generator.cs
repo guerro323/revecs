@@ -19,7 +19,7 @@ public class RevolutionGenerator : ISourceGenerator
         // retrieve the populated receiver
         if (!(context.SyntaxContextReceiver is SyntaxReceiver receiver))
             return;
-
+        
         var sw = new Stopwatch();
         void start() => sw.Restart();
 

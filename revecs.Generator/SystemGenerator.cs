@@ -6,6 +6,13 @@ using CSharpSyntaxTree = Microsoft.CodeAnalysis.CSharp.CSharpSyntaxTree;
 
 namespace revecs.Generator;
 
+public class SystemQuery
+{
+    public bool IsResource;
+    public bool IsOptional;
+    public QuerySource Source;
+}
+
 public class SystemGenerator
 {
     public readonly GeneratorExecutionContext Context;
@@ -31,8 +38,6 @@ public class SystemGenerator
         Receiver = syntaxReceiver;
 
         Compilation = compilation;
-        
-        GenerateHelpers();
         CreateSystems();
 
         compilation = Compilation;
@@ -45,130 +50,44 @@ public class SystemGenerator
 
     public Compilation Compilation;
 
-    private void GenerateHelpers()
-    {
-        const string helpersSource =
-            @"
-using System;
-using System.Runtime.CompilerServices;
-namespace revecs
-{
-    internal class RevolutionSystemAttribute : Attribute {}
-
-    /// <summary>
-    /// Depend on another <see cref=""ISystem""/>
-    /// </summary>
-    /// <list type=""table"">
-    /// <item>
-    ///     <term><see cref=""Type""/></term>
-    ///     <description>If the system struct was auto-generated (not defined by the client) then it must be fully qualified.</description>
-    /// </item>
-    /// <item>
-    ///     <term><see cref=""RequireCompletion""/></term>
-    ///     <description>If true and the dependency was canceled or not queued, the system will not be run.</description>
-    /// </item>
-    /// </list>
-    [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
-    internal class DependOnAttribute : Attribute 
-    {
-        public readonly Type Type;
-        public readonly bool RequireCompletion;
-
-        private DependOnAttribute()
-        {
-            throw new InvalidOperationException(""not initialized"");
-        }
-        
-        /// <param name=""type"">The system type on which to depend.</param>
-        public DependOnAttribute(Type type) {}
-        public DependOnAttribute(string type) {}
-        
-        /// <param name=""type"">Whether or not the system can only execute if the dependency was successfully completed</param>
-        /// <param name=""requireCompletion"">The system type on which to depend.</param>
-        public DependOnAttribute(Type type, bool requireCompletion = true) {}
-        public DependOnAttribute(string type, bool requireCompletion = true) {}
-    }
-
-    /// <summary>
-    /// Make another <see cref=""ISystem""/> depend on the created one.
-    /// </summary>
-    /// <list type=""table"">
-    /// <item>
-    ///     <term><see cref=""Type""/></term>
-    ///     <description>If the system struct was auto-generated (not defined by the client) then it must be fully qualified.</description>
-    /// </item>
-    /// <item>
-    ///     <term><see cref=""RequireCompletion""/></term>
-    ///     <description>If true and the dependency was canceled or not queued, the system will not be run.</description>
-    /// </item>
-    /// </list>
-    [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
-    internal class AddForeignDependencyAttribute : Attribute 
-    {
-        public readonly Type Type;
-        public readonly bool RequireCompletion;
-
-        private AddForeignDependencyAttribute()
-        {
-            throw new InvalidOperationException(""not initialized"");
-        }
-        
-        /// <param name=""type"">The system type on which to depend.</param>
-        public AddForeignDependencyAttribute(Type type) {}
-        public AddForeignDependencyAttribute(string type) {}
-        
-        /// <param name=""type"">Whether or not the system can only execute if the dependency was successfully completed</param>
-        /// <param name=""requireCompletion"">The system type on which to depend.</param>
-        public AddForeignDependencyAttribute(Type type, bool requireCompletion = true) {}
-        public AddForeignDependencyAttribute(string type, bool requireCompletion = true) {}
-    }
-
-    internal class ParamAttribute : Attribute {}
-    internal class OptionalAttribute : Attribute {}
-}
-";
-        Context.AddSource("SystemAttributes", helpersSource);
-        Compilation = Compilation.AddSyntaxTrees(
-            CSharpSyntaxTree.ParseText
-            (
-                helpersSource,
-                (Context.Compilation as CSharpCompilation)?.SyntaxTrees[0].Options as CSharpParseOptions
-            )
-        );
-    }
-
     private void CreateSystems()
     {
         foreach (var tree in Compilation.SyntaxTrees)
         {
             var semanticModel = Compilation.GetSemanticModel(tree);
 
-            foreach (var declaredMethod in tree
+            foreach (var declare in tree
                 .GetRoot()
                 .DescendantNodesAndSelf()
-                .OfType<MethodDeclarationSyntax>())
+                .OfType<TypeDeclarationSyntax>())
             {
+                if (declare is InterfaceDeclarationSyntax)
+                    continue;
+                
+                if (tree.FilePath == string.Empty)
+                    continue;
+                
                 if (tree.FilePath.Contains("Generated/Generator"))
                     continue;
 
-                var symbol = (IMethodSymbol) ModelExtensions.GetDeclaredSymbol(semanticModel, declaredMethod)!;
+                var symbol = (ITypeSymbol) ModelExtensions.GetDeclaredSymbol(semanticModel, declare)!;
 
                 // is system
-                var systemAttribute = symbol
-                    .GetAttributes()
-                    .FirstOrDefault(a => a.AttributeClass.Name == "RevolutionSystemAttribute");
+                var systemInterface = symbol
+                    .Interfaces
+                    .FirstOrDefault(i => i.Name == "IRevolutionSystem");
 
-                if (systemAttribute != null)
+                if (systemInterface != null)
                 {
                     Log(0, "Found System: " + symbol + ", File: " + tree.FilePath);
                     
-                    FoundSystem(tree, declaredMethod, symbol, systemAttribute);
+                    FoundSystem(tree, declare, symbol);
                 }
             }
         }
     }
 
-    private static IEnumerable<INamedTypeSymbol> GetParentTypes(IMethodSymbol method)
+    private static IEnumerable<INamedTypeSymbol> GetParentTypes(ISymbol method)
     {
         var type = method.ContainingType;
         while (type != null)
@@ -178,11 +97,7 @@ namespace revecs
         }
     }
 
-    record ParamSource(string Name, INamedTypeSymbol Type);
-    record SystemDependencySource(string TypeName, bool RequireSuccess);
-    record ForeignSystemDependencySource(string TypeName, bool RequireSuccess);
-
-    private void FoundSystem(SyntaxTree tree, MethodDeclarationSyntax declare, IMethodSymbol symbol, AttributeData _)
+    private void FoundSystem(SyntaxTree tree, TypeDeclarationSyntax declare, ITypeSymbol symbol)
     {
         var model = Compilation.GetSemanticModel(tree);
         
@@ -192,7 +107,7 @@ namespace revecs
         {
             sb.Append(@"using revecs.Core;
 using revecs.Utility;
-using revecs.Query;
+using revecs.Querying;
 using revecs.Systems;
 using revtask.Core;
 using revtask.Helpers;
@@ -211,24 +126,19 @@ using System.Runtime.InteropServices;
         void BeginNamespace()
         {
             if (symbol.ContainingNamespace is { } ns)
-                sb.AppendFormat("namespace {0}\n{{\n", ns.ToString());
-        }
-
-        void EndNamespace()
-        {
-            if (symbol.ContainingNamespace is { })
-                sb.AppendFormat("}}\n");
+                sb.Append($"namespace {ns.ToString()};\n\n");
         }
         
-        var isParentAPartialSystem = symbol.ContainingType is { } parent
-                                     && parent
-                                         .AllInterfaces
-                                         .Any(i => i.Name == "ISystem");
-
         var parentTypes = GetParentTypes(symbol)
-            .Skip(isParentAPartialSystem ? 1 : 0)
             .Reverse()
             .ToList();
+        
+        if (symbol.GetMembers("Body").FirstOrDefault() is not IMethodSymbol bodyMethod)
+            throw new InvalidOperationException("Body not found");
+
+        var bodySyntax = bodyMethod.DeclaringSyntaxReferences
+            .First()
+            .GetSyntax() as MethodDeclarationSyntax;
         
         void BeginParentTypes()
         {
@@ -257,280 +167,223 @@ using System.Runtime.InteropServices;
         var arguments = new Dictionary<string, object>();
         void CreateArguments()
         {
-            foreach (var arg in symbol.Parameters)
+            void GetNodes<T>(SyntaxNode up, List<T> list, int indent = 0)
             {
-                Log(1, arg.Name);
-                Log(2, arg.Type + " : " + arg.Type.GetType());
-
-                //
-                // Params
-                //
-                if (arg.GetAttributes().Any(a => a.AttributeClass!.Name == "ParamAttribute"))
+                foreach (var node in up.ChildNodes())
                 {
-                    if (arg.Type is INamedTypeSymbol named)
+                    //Log(1, string.Join("", Enumerable.Repeat("  ", indent)) + node.GetType().Name);
+                    if (node is T s)
                     {
-                        arguments[arg.Name] = new ParamSource(arg.Name, named);
+                        list.Add(s);
+                        GetNodes(node, list, indent + 1);
                     }
                     else
-                    {
-                        Context.ReportDiagnostic(Diagnostic.Create(
-                            new DiagnosticDescriptor(
-                                id: "REVSYS001",
-                                title: "Invalid type on parameter with ParamAttribute",
-                                messageFormat: $"Parameter '{arg.Name}' with ParamAttribute should be a concrete type.",
-                                category: "revecs.System",
-                                defaultSeverity: DiagnosticSeverity.Error,
-                                isEnabledByDefault: true),
-                            arg.Locations.FirstOrDefault()
-                        ));
-                    }
+                        GetNodes(node, list, indent + 1);
                 }
-                //
-                // Queries
-                //
-                else if (arg.GetAttributes().Any(a => a.AttributeClass!.Name
-                             is "Query" or "QueryAttribute"
-                             or "Singleton" or "SingletonAttribute"))
+            }
+            
+            var list = new List<InvocationExpressionSyntax>();
+            GetNodes(bodySyntax, list);
+
+            var replace = new Dictionary<SyntaxNode, SyntaxNode>();
+
+            void Replace(SyntaxNode old, SyntaxNode n)
+            {
+                replace[old] = n;
+            }
+
+            var i = 0;
+            foreach (var node in list)
+            {
+                i += 1;
+
+                var identifier = node.ChildNodes().First().GetFirstToken().Text;
+                var isRes = identifier is "RequiredResource" or "OptionalResource";
+                var isQuery = identifier is "RequiredQuery" or "OptionalQuery";
+
+                if (isQuery)
                 {
-                    var options = new HashSet<INamedTypeSymbol>(SymbolEqualityComparer.Default);
-                    var queryName = default(string);
-                    var validQueryName = default(string);
-                    
-                    var isAnonymousQuery = arg.Type.Locations.IsEmpty;
-                    if (isAnonymousQuery)
+                    Log(1, $"Found {identifier}");
+                    var queryArgs = node.ChildNodes().OfType<ArgumentListSyntax>().First();
+
+                    var args = new List<QueryArgument>();
+                    foreach (var arg in queryArgs.ChildNodes())
                     {
-                        queryName = arg.Type.Name + "<";
-                        queryName += string.Join(',',
-                            ((INamedTypeSymbol) arg.Type).TypeArguments.Select((t, i) => $"T{i}"));
-                        queryName += ">";
+                        var modifierList = new List<GenericNameSyntax>();
+                        var typeList = new List<IdentifierNameSyntax>();
+                        var nameList = new List<LiteralExpressionSyntax>();
+                        GetNodes(arg, modifierList);
+                        GetNodes(arg, typeList);
+                        GetNodes(arg, nameList);
 
-                        validQueryName = arg.Type.Name + "<";
-                        validQueryName += string.Join(',',
-                            ((INamedTypeSymbol) arg.Type).TypeArguments.Select(_ => "global::System.ValueTuple"));
-                        validQueryName += ">";
-
-                        foreach (var t in ((INamedTypeSymbol) arg.Type).TypeArguments)
-                            options.Add((INamedTypeSymbol) t);
-                        
-                        if (arg.GetAttributes().Any(a => a.AttributeClass!.Name is "Singleton" or "SingletonAttribute"))
+                        if (typeList.Count == 0)
                         {
-                            options.Add(QueryGenerator.GetSingletonTypeSymbol());
+                            throw new InvalidOperationException("Type list shouldn't be empty");
                         }
-                    }
-                    else
-                    {
-                        foreach (var t in arg.Type.AllInterfaces)
-                            options.Add(t);
+
+                        if (modifierList.Count == 0)
+                        {
+                            throw new InvalidOperationException("Modifier list shouldn't be empty");
+                        }
+
+                        var t = typeList[0];
+                        var modifier = modifierList[0].GetFirstToken().Text;
+                        var typeName = t.GetFirstToken().Text;
+                        var alternativeName = nameList.Count == 0
+                            ? typeName
+                            : nameList[0].GetFirstToken().Value;
+
+                        Log(1, "searchin for  " + typeName);
+
+                        var typeSymbolInfo = Compilation.GetSemanticModel(tree, true).GetSymbolInfo(t);
+                        var typeSymbol =
+                            (typeSymbolInfo.Symbol ?? typeSymbolInfo.CandidateSymbols.FirstOrDefault()) as
+                            INamedTypeSymbol;
+                        if (typeSymbol == null)
+                            throw new InvalidOperationException($"Type '{typeName}' not found");
+
+                        Log(2, $"{modifier.ToLower()} {typeName}:{alternativeName} {typeSymbol.GetTypeName()}");
+
+                        // (modifier, typeSymbol, alternativeName.ToString())
+
+                        QueryArgument.EModifier eModifier = modifier.ToLower() switch
+                        {
+                            "write" or "read" or "all" => QueryArgument.EModifier.All,
+                            "or" => QueryArgument.EModifier.Or,
+                            "none" => QueryArgument.EModifier.None,
+                            _ => throw new InvalidOperationException("unknown identifier")
+                        };
+                        args.Add(new QueryArgument
+                        {
+                            Symbol = typeSymbol,
+                            PublicName = alternativeName.ToString(),
+                            CanWrite = modifier == "Write",
+                            IsOption = modifier != "Write" && modifier != "Read",
+                            Modifier = eModifier,
+                            Custom = ComponentGenerator.GetCustomAccess(Compilation, typeSymbol)
+                        });
                     }
 
-                    if (arg.GetAttributes().Any(a => a.AttributeClass!.Name is "Optional" or "OptionalAttribute"))
-                    {
-                        var optionalAttribute = Compilation.GetUnknownType("global::revecs.OptionalAttribute");
-                        if (optionalAttribute == null)
-                            throw new NullReferenceException(nameof(optionalAttribute));
-                        options.Add(optionalAttribute);
-                    }
-                        
                     var source = new QuerySource(
-                        symbol.ContainingType,
+                        (INamedTypeSymbol) symbol,
                         symbol.ContainingNamespace?.ToString(),
-                        arg.Type.Name,
+                        $"query{i}",
                         tree.FilePath,
-                        options.ToArray(),
-                        StructureName: queryName,
-                        ValidStructureName: validQueryName,
-                        AlreadyGenerated: !isAnonymousQuery
+                        args.ToArray(),
+                        StructureName: $"__Query{i}",
+                        ValidStructureName: $"__Query{i}",
+                        AlreadyGenerated: false
                     );
-                    arguments.Add(arg.Name, source);
-                }
-                //
-                // Commands
-                //
-                else if (arg.GetAttributes().Any(a => a.AttributeClass!.Name
-                             is "Cmd" or "CmdAttribute"))
-                {
-                    var options = new HashSet<INamedTypeSymbol>(SymbolEqualityComparer.Default);
-                    var cmdName = default(string);
-                    var validCmdName = default(string);
+                    arguments.Add($"query{i}", new SystemQuery
+                    {
+                        IsOptional = identifier.StartsWith("Optional"),
+                        IsResource = false,
+                        Source = source
+                    });
+                    Replace(node, SyntaxFactory.IdentifierName($"query{i}"));
                     
-                    var isAnonymousCmd = arg.Type.Locations.IsEmpty;
-                    if (isAnonymousCmd)
+                }
+                else if (isRes)
+                {
+                    Log(1, $"Found {identifier}");
+                    var queryArgs = node.ChildNodes().OfType<ArgumentListSyntax>().First();
+
+                    var args = new List<QueryArgument>();
                     {
-                        cmdName = arg.Type.Name + "<";
-                        cmdName += string.Join(',',
-                            ((INamedTypeSymbol) arg.Type).TypeArguments.Select((t, i) => $"T{i}"));
-                        cmdName += ">";
+                        var typeList = new List<IdentifierNameSyntax>();
+                        GetNodes(node, typeList);
+                        if (typeList.Count == 0)
+                        {
+                            throw new InvalidOperationException("no  type found");
+                        }
 
-                        validCmdName = arg.Type.Name + "<";
-                        validCmdName += string.Join(',',
-                            ((INamedTypeSymbol) arg.Type).TypeArguments.Select(_ => "global::System.ValueTuple"));
-                        validCmdName += ">";
-
-                        foreach (var t in ((INamedTypeSymbol) arg.Type).TypeArguments)
-                            options.Add((INamedTypeSymbol) t);
+                        var t = typeList[0];
+                        var typeName = t.GetFirstToken().Text;
+                        
+                        var typeSymbolInfo = Compilation.GetSemanticModel(tree, true).GetSymbolInfo(t);
+                        var typeSymbol =
+                            (typeSymbolInfo.Symbol ?? typeSymbolInfo.CandidateSymbols.FirstOrDefault()) as
+                            INamedTypeSymbol;
+                        if (typeSymbol == null)
+                            throw new InvalidOperationException($"Type '{typeName}' not found");
+                        
+                        args.Add(new QueryArgument
+                        {
+                            Symbol = typeSymbol,
+                            PublicName = "SingletonValue",
+                            CanWrite = false, // assume that we can't write to resources for now (if they want to write, they just need to do it via queries)
+                            IsOption = false,
+                            Modifier = QueryArgument.EModifier.All,
+                            Custom = ComponentGenerator.GetCustomAccess(Compilation, typeSymbol)
+                        });
                     }
-                    else
-                    {
-                        foreach (var t in arg.Type.AllInterfaces)
-                            options.Add(t);
-                    }
 
-                    var source = new CommandSource(
-                        symbol.ContainingType,
+                    var source = new QuerySource(
+                        (INamedTypeSymbol) symbol,
                         symbol.ContainingNamespace?.ToString(),
-                        arg.Type.Name,
+                        $"res{i}",
                         tree.FilePath,
-                        options.ToArray(),
-                        StructureName: cmdName,
-                        ValidStructureName: validCmdName,
-                        AlreadyGenerated: !isAnonymousCmd
+                        args.ToArray(),
+                        StructureName: $"__Resource{i}",
+                        ValidStructureName: $"__Resource{i}",
+                        AlreadyGenerated: false
                     );
-                    arguments.Add(arg.Name, source);
+                    arguments.Add($"res{i}", new SystemQuery
+                    {
+                        IsOptional = identifier.StartsWith("Optional"),
+                        IsResource = true,
+                        Source = source
+                    });
+
+                    Replace(node,
+                        SyntaxFactory.ParseExpression($"res{i}.First().SingletonValue")
+                    );
                 }
             }
 
-            var attrs = symbol.GetAttributes();
-            for (var index = 0; index < attrs.Length; index++)
+            // get all commands
             {
-                var attr = attrs[index];
-                Log(1, "Attribute [" + attr.AttributeClass.Name + "]");
-                if (attr.AttributeClass!.Name is "DependOnAttribute" or "AddForeignDependencyAttribute")
+                var options = new HashSet<INamedTypeSymbol>(SymbolEqualityComparer.Default);
+                foreach (var inter in symbol.Interfaces)
                 {
-                    Log(2, "Constructors Length: " + attr.ConstructorArguments.Length);
+                    // not a command, skip
+                    if (!inter.AllInterfaces.Any(i => i.Name == "IRevolutionCommand"))
+                        continue;
 
-                    TypedConstant type, require = default;
-                    type = attr.ConstructorArguments[0];
-                    if (attr.ConstructorArguments.Length > 1)
-                        require = attr.ConstructorArguments[1];
-
-                    var fullFormat = string.Empty;
-                    var shortName = string.Empty;
-                    
-                    var isGenerated = false;
-                    if (type.Value is string str)
-                    {
-                        var method = declare.GetMethodSymbolFromNameOf(model, index);
-
-                        fullFormat = $"{method.ContainingType.GetTypeName()}.__{method.Name}System";
-                        shortName = method.Name;
-                    }
-                    else
-                    {
-                        fullFormat = ((INamedTypeSymbol) type.Value!).GetTypeName();
-                        shortName = ((INamedTypeSymbol) type.Value!).Name;
-                        
-                        isGenerated = ((INamedTypeSymbol) type.Value!).Locations.IsEmpty;
-                    }
-
-                    var required = require.Value as bool? ?? false;
-
-                    Log(2, $"{fullFormat} ({required}) Of Generated? {isGenerated}");
-
-                    if (isGenerated && !fullFormat.StartsWith("global::"))
-                    {
-                        Context.ReportDiagnostic(Diagnostic.Create(
-                            new DiagnosticDescriptor(
-                                id: "REVSYS002",
-                                title: "",
-                                messageFormat:
-                                $"System '{symbol.Name}' [{attr.AttributeClass.Name}] should be fed with a constructed type. (Encapsulate other system function into an user-created ISystem structure, or fully qualify the type with global::)",
-                                category: "revecs.System",
-                                defaultSeverity: DiagnosticSeverity.Error,
-                                isEnabledByDefault: true),
-                            symbol.Locations.FirstOrDefault()
-                        ));
-                    }
-                    else
-                    {
-                        if (attr.AttributeClass.Name is "AddForeignDependencyAttribute")
-                        {
-                            arguments[$"{shortName}"] =
-                                new ForeignSystemDependencySource(fullFormat, required);
-                        }
-                        else
-                        {
-                            arguments[$"{shortName}"] =
-                                new SystemDependencySource(fullFormat, required);
-                        }
-                    }
+                    options.Add(inter);
                 }
+
+                arguments.Add("Cmd", new CommandSource(
+                    (INamedTypeSymbol) symbol,
+                    symbol.ContainingNamespace?.ToString(),
+                    "cmd",
+                    tree.FilePath,
+                    options.ToArray(),
+                    StructureName: "__Commands",
+                    ValidStructureName: "__Commands",
+                    AlreadyGenerated: false
+                ));
             }
 
             foreach (var (_, obj) in arguments)
             {
-                if (obj is QuerySource {AlreadyGenerated: false} querySource)
-                    QueryGenerator.GenerateQuery(querySource);
+                if (obj is SystemQuery systemQuery)
+                    QueryGenerator.GenerateQuery(systemQuery.Source);
                 if (obj is CommandSource {AlreadyGenerated: false} commandSource)
                     CommandGenerator.GenerateCommand(commandSource);
             }
+
+            bodySyntax = bodySyntax.ReplaceNodes(replace.Keys, (o, r) => replace[o]);
         }
 
-        var systemName = $"__{symbol.Name}System";
-        if (isParentAPartialSystem)
-            systemName = symbol.ContainingType!.Name;
+        var systemName = $"{symbol.Name}";
 
         var needConstructor = false;
-        
+
         void BeginSystem()
         {
-            if (isParentAPartialSystem)
-            {
-                sb.AppendLine($"    public partial struct {systemName}\n    {{");
-            }
-            else
-            {
-                sb.AppendLine($"    public partial struct {systemName} : ISystem\n    {{");
-            }
-
-            needConstructor = arguments.Any(pair => pair.Value is ParamSource);
-            if (needConstructor)
-            {
-                var init = string.Join(
-                    ',',
-                    arguments
-                        .Select(pair =>
-                        {
-                            var (name, obj) = pair;
-                            if (obj is not ParamSource paramSource)
-                                return default;
-
-                            return (name, obj: paramSource);
-                        })
-                        .Where(pair => pair.obj != null!)
-                        .Select(pair =>
-                        {
-                            var (name, obj) = pair;
-                            return $"{obj.Type.GetTypeName()} {name}";
-                        })
-                );
-                
-                var body = string.Join(
-                    "\n            ",
-                    arguments
-                        .Select(pair =>
-                        {
-                            var (name, obj) = pair;
-                            if (obj is not ParamSource paramSource)
-                                return default;
-
-                            return (name, obj: paramSource);
-                        })
-                        .Where(pair => pair.obj != null!)
-                        .Select(pair =>
-                        {
-                            var (name, obj) = pair;
-                            return $"this.{name} = {name};";
-                        })
-                );
-
-                sb.AppendLine($@"
-        public {systemName}({init})
-        {{
-            this = default;
-            {body}
-        }}
-");
-            }
+            sb.AppendLine($"public partial struct {systemName}\n{{");
+            sb.AppendLine($"    public partial struct __InternalSystem : ISystem\n    {{");
         }
 
         void EndSystem()
@@ -544,20 +397,15 @@ using System.Runtime.InteropServices;
             sb.AppendLine("        private ComponentType<BufferData<SystemDependencies>> _systemDependenciesType;");
             sb.AppendLine("        private ComponentType<JobRequest> _currentSystemJobType;");
             sb.AppendLine("        private ComponentType<SystemState> _systemStateType;");
+            sb.AppendLine($"        public {systemName} Payload;");
             
             foreach (var (name, obj) in arguments)
             {
-                if (obj is QuerySource querySource)
-                    sb.AppendLine($"        private {querySource.GetDisplayName()} {name};");
+                if (obj is SystemQuery querySource)
+                    sb.AppendLine($"        private {querySource.Source.GetDisplayName()} {name};");
 
                 if (obj is CommandSource commandSource)
                     sb.AppendLine($"        private {commandSource.GetDisplayName()} {name};");
-
-                if (obj is ParamSource paramSource)
-                    sb.AppendLine($"        private {paramSource.Type.GetTypeName()} {name};");
-
-                if (obj is SystemDependencySource or ForeignSystemDependencySource)
-                    sb.AppendLine($"        private ComponentType {name}Type;");
             }
         }
 
@@ -566,26 +414,16 @@ using System.Runtime.InteropServices;
             var init = new StringBuilder();
             foreach (var (name, obj) in arguments)
             {
-                if (obj is QuerySource query)
+                if (obj is SystemQuery query)
                 {
-                    init.Append($"            {name} = new {query.GetDisplayName()}(world);");
+                    init.Append($"            {name} = new {query.Source.GetDisplayName()}(world);");
                 }
                 
                 if (obj is CommandSource cmd)
                 {
                     init.Append($"            {name} = new {cmd.GetDisplayName()}(world);");
                 }
-
-                if (obj is SystemDependencySource dep)
-                {
-                    init.Append($"            {name}Type = world.GetSystemType<{dep.TypeName}>();");
-                }
                 
-                if (obj is ForeignSystemDependencySource foreign)
-                {
-                    init.Append($"            {name}Type = world.GetSystemType<{foreign.TypeName}>();");
-                }
-
                 init.AppendLine();
             }
             
@@ -595,7 +433,6 @@ using System.Runtime.InteropServices;
             world.SetSystem<{systemName}>(systemHandle);
 
             // This is done so that the initial method doesn't appear as unused
-            _ = nameof({symbol.Name});
             _entityDependency = world.GetEntityDependency();
             _systemDependenciesType = SystemDependencies.GetComponentType(world);
             _currentSystemJobType = CurrentSystemJobRequest.GetComponentType(world);
@@ -608,36 +445,18 @@ using System.Runtime.InteropServices;
         
         void PreQueueFunction()
         {
-            var fromSource = new StringBuilder();
-
-            foreach (var (name, obj) in arguments)
-            {
-                if (obj is SystemDependencySource source)
-                {
-                    var addSection =
-                        $"new() {{ Other = world.GetSystemHandle({name}Type), RequireSuccess = {source.RequireSuccess.ToString().ToLower()} }}";
-                    
-                    fromSource.AppendLine(
-                        $@"            world.GetComponentData(systemHandle, _systemDependenciesType)
-                    .Add({addSection});"
-                    );
-                }
-                else if (obj is ForeignSystemDependencySource foreignSource)
-                {
-                    var addSection =
-                        $"new() {{ Other = systemHandle, RequireSuccess = {foreignSource.RequireSuccess.ToString().ToLower()} }}";
-
-                    fromSource.AppendLine(
-                        $@"            world.GetComponentData(world.GetSystemHandle({name}Type), _systemDependenciesType)
-                    .Add({addSection});"
-                    );
-                }
-            }
-
+            var constraintsMethod = symbol.GetMembers("Constraints")[0] as IMethodSymbol;
             sb.AppendLine(@$"
         public void PreQueue(SystemHandle systemHandle, RevolutionWorld world) 
         {{
-{fromSource}
+            var {constraintsMethod.Parameters[0].Name} = new SystemObject
+            {{
+                World = world,
+                Handle = systemHandle,
+                DependenciesType = _systemDependenciesType
+            }};
+
+{(constraintsMethod.DeclaringSyntaxReferences[0].GetSyntax() as MethodDeclarationSyntax)!.Body }
         }}
 ");     
         }
@@ -647,7 +466,7 @@ using System.Runtime.InteropServices;
             var fromSource = new StringBuilder();
             foreach (var (name, obj) in arguments)
             {
-                if (obj is QuerySource or CommandSource or ParamSource)
+                if (obj is SystemQuery or CommandSource)
                 {
                     fromSource.Append("            ");
                     fromSource.AppendLine($"job.{name} = {name};");
@@ -675,22 +494,16 @@ using System.Runtime.InteropServices;
             var fieldFromSource = new StringBuilder();
             foreach (var (name, obj) in arguments)
             {
-                if (obj is QuerySource querySource)
+                if (obj is SystemQuery querySource)
                 {
                     fieldFromSource.Append("            ");
-                    fieldFromSource.AppendLine($"public {querySource.GetDisplayName()} {name};");
+                    fieldFromSource.AppendLine($"public {querySource.Source.GetDisplayName()} {name};");
                 }
                 
                 if (obj is CommandSource commandSource)
                 {
                     fieldFromSource.Append("            ");
                     fieldFromSource.AppendLine($"public {commandSource.GetDisplayName()} {name};");
-                }
-                
-                if (obj is ParamSource paramSource)
-                {
-                    fieldFromSource.Append("            ");
-                    fieldFromSource.AppendLine($"public {paramSource.Type.GetTypeName()} {name};");
                 }
             }
 
@@ -726,7 +539,7 @@ using System.Runtime.InteropServices;
 
             foreach (var (name, obj) in arguments)
             {
-                if (obj is QuerySource or CommandSource)
+                if (obj is SystemQuery or CommandSource)
                 {
                     canExecute.Append("                   ");
                     canExecute.AppendLine($"&& {name}.DependencySwap(runner, info.Request)");
@@ -741,9 +554,9 @@ using System.Runtime.InteropServices;
             var earlyReturn = new StringBuilder();
             foreach (var (name, obj) in arguments)
             {
-                if (obj is QuerySource querySource)
+                if (obj is SystemQuery querySource)
                 {
-                    if (querySource.Header.Any(t => t.Name is QueryGenerator.OptionalType or $"{QueryGenerator.OptionalType}Attribute"))
+                    if (querySource.IsOptional)
                         continue;
                     
                     earlyReturn.Append("                ");
@@ -818,7 +631,7 @@ using System.Runtime.InteropServices;
 
             private void Do()
             {{
-{declare.Body}
+{bodySyntax.Body}
             }}
 
 {additional}
@@ -826,109 +639,56 @@ using System.Runtime.InteropServices;
 ");
         }
 
-        void CreateShadowFunction()
+        void AnonymousFunctions()
         {
-            if (isParentAPartialSystem)
-                return;
-
-            if (!needConstructor)
-            {
-                sb.Append($@"
-    public static void {symbol.Name}(SystemGroup systemGroup)
-    {{
-        systemGroup.Add(new {systemName}());
+            sb.AppendLine($@"
+    public void AddToSystemGroup(SystemGroup group) {{
+        group.Add(new __InternalSystem() {{ Payload = this }});
     }}
+
+    private dynamic RequiredQuery(params object[] p) => throw new NotImplementedException();
+    private dynamic OptionalQuery(params object[] p) => throw new NotImplementedException();
+    private T RequiredResource<T>() => throw new NotImplementedException();
+    private T OptionalResource<T>() => throw new NotImplementedException();
+
+    private struct __All<T> {{}}
+    private struct __Or<T> {{}}
+    private struct __None<T> {{}}
+
+    private __All<T> Write<T>(string name = """") => throw new NotImplementedException();
+    private __All<T> Read<T>(string name = """") => throw new NotImplementedException();
+    private __All<T> All<T>(string name = """") => throw new NotImplementedException();
+    private __Or<T> Or<T>(string name = """") => throw new NotImplementedException();
+    private __None<T> None<T>(string name = """") => throw new NotImplementedException();
 ");
 
-                return;
-            }
-
-            var filteredArgs = arguments
-                .Select(pair =>
+            foreach (var arg in arguments)
+            {
+                if (arg.Value is SystemQuery {IsResource: false, Source: { } q})
                 {
-                    var (name, obj) = pair;
-                    if (obj is not ParamSource paramSource)
-                        return default;
-
-                    return (name, obj: paramSource);
-                })
-                .Where(pair => pair.obj != null!)
-                .ToArray();
-
-            var field = string.Join(
-                "\n            ",
-                filteredArgs.Select(pair =>
+                    var paramSb = new StringBuilder();
+                    for (var index = 0; index < q.Arguments.Length; index++)
                     {
-                        var (name, obj) = pair;
-                        return $"public {obj.Type.GetTypeName()} {name};";
-                    })
-            );
+                        paramSb.Append($"__{q.Arguments[index].Modifier}<{q.Arguments[index].Symbol.Name}> _{index}");
+                        if (index + 1 < q.Arguments.Length)
+                            paramSb.Append(", ");
+                    }
 
-            var param = string.Join(
-                ',',
-                filteredArgs.Select(pair =>
+                    sb.AppendLine($@"
+    private {q.StructureName} RequiredQuery({paramSb}) => throw new NotImplementedException();
+");
+                    sb.AppendLine($@"
+    private {q.StructureName} OptionalQuery({paramSb}) => throw new NotImplementedException();
+");
+                }
+
+                if (arg.Key == "Cmd")
                 {
-                    var (name, obj) = pair;
-                    return $"{obj.Type.GetTypeName()} {name}";
-                })
-            );
-
-            var set = string.Join(
-                ',',
-                filteredArgs.Select(pair =>
-                    {
-                        var (name, obj) = pair;
-                        if (obj is not ParamSource paramSource)
-                            return default;
-
-                        return (name, obj: paramSource);
-                    })
-                    .Where(pair => pair.obj != null!)
-                    .Select(pair =>
-                    {
-                        var (name, obj) = pair;
-                        return $"opt.{name}";
-                    })
-            );
-
-            var option = new StringBuilder();
-            if (filteredArgs.Length == 1)
-            {
-                option.Append(@$"
-            public static implicit operator Option({filteredArgs[0].obj.Type.GetTypeName()} arg) => new() {{ {filteredArgs[0].name} = arg }};
+                    sb.AppendLine($@"
+    private __Commands Cmd;
 ");
+                }
             }
-            else
-            {
-                var tupleSet = string.Join(
-                    ',',
-                    filteredArgs.Select(a =>
-                    {
-                        return $"{a.name} = arg.{a.name}";
-                    })
-                );
-                
-                option.Append($@"
-            public static implicit operator Option(({param}) arg) => new() {{ {tupleSet} }};
-");
-            }
-
-            sb.Append($@"
-    public static Action<SystemGroup> {symbol.Name}({systemName}.Option opt)
-    {{
-        return g => g.Add(new {systemName}({set}));
-    }}
-
-    public partial struct {systemName}
-    {{
-        public struct Option
-        {{
-            {field}
-
-            {option}
-        }}
-    }}
-");
         }
 
         Usings();
@@ -947,14 +707,16 @@ using System.Runtime.InteropServices;
                     JobStruct();
                 }
                 EndSystem();
-
-                CreateShadowFunction();
+                
+                AnonymousFunctions();
+                
+                sb.AppendLine("}");
             }
             EndParentTypes();
         }
-        EndNamespace();
 
         var fileName = $"{(symbol.ContainingType == null ? "" : $"{symbol.ContainingType.Name}.")}{symbol.Name}";
-        Context.AddSource($"{Path.GetFileNameWithoutExtension(tree.FilePath)}.{fileName}", "#pragma warning disable\n" + sb.ToString());
+        Log(0, fileName);
+        Context.AddSource($"SYSTEM.{Path.GetFileNameWithoutExtension(tree.FilePath)}.{fileName}", "#pragma warning disable\n" + sb.ToString());
     }
 }

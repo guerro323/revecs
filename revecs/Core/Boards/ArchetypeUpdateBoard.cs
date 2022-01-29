@@ -10,9 +10,8 @@ namespace revecs.Core.Boards
 
     public sealed class ArchetypeUpdateBoard : BoardBase
     {
-        private readonly BatchRunnerBoard _runnerBoard;
         private readonly ArchetypeBoard _archetypeBoard;
-        private readonly EntityComponentLinkBoard _componentLinkBoard;
+        private readonly EntityHasComponentBoard _hasComponentBoard;
         private readonly ComponentTypeBoard _componentTypeBoard;
         private readonly EntityBoard _entityBoard;
 
@@ -28,18 +27,17 @@ namespace revecs.Core.Boards
             remove => _preSwitchList.Remove(value);
         }
 
-        private BusySynchronizationManager _synchronization = new();
+        private TestSynchro _synchronization = new();
         
         public ArchetypeUpdateBoard(RevolutionWorld world) : base(world)
         {
             _column.update = Array.Empty<UEntityHandle>();
             _column.queueIndex = Array.Empty<int>();
 
-            _runnerBoard = world.GetBoard<BatchRunnerBoard>("Runner");
-            _entityBoard = world.GetBoard<EntityBoard>("Entity");
-            _archetypeBoard = world.GetBoard<ArchetypeBoard>("Archetype");
-            _componentTypeBoard = world.GetBoard<ComponentTypeBoard>("ComponentType");
-            _componentLinkBoard = world.GetBoard<EntityComponentLinkBoard>("EntityComponentLink");
+            _entityBoard = world.EntityBoard;
+            _archetypeBoard = world.ArchetypeBoard;
+            _componentTypeBoard = world.ComponentTypeBoard;
+            _hasComponentBoard = world.EntityHasComponentBoard;
 
             _entityOnResizeListener = _entityBoard.CurrentSize.Subscribe(EntityOnResize, true);
         }
@@ -53,7 +51,7 @@ namespace revecs.Core.Boards
                 _archetypeBoard,
                 _componentTypeBoard,
                 _entityBoard,
-                _componentLinkBoard,
+                _hasComponentBoard,
                 handle
             );
 
@@ -71,7 +69,6 @@ namespace revecs.Core.Boards
         public void Update()
         {
             using var sync = _synchronization.Synchronize();
-            
             var span = _column.update.AsSpan(0, _updateCount);
             foreach (ref readonly var ev in CollectionsMarshal.AsSpan(_preSwitchList))
                 ev(span);
@@ -102,14 +99,20 @@ namespace revecs.Core.Boards
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Queue(UEntityHandle handle)
         {
-            using var sync = _synchronization.Synchronize();
+            //using var sync = _synchronization.Synchronize();
+            _synchronization.Lock();
             
             ref var index = ref _column.queueIndex[handle.Id];
             if (index >= 0)
+            {
+                _synchronization.Unlock();
                 return; // already queued
-            
+            }
+
             index = _updateCount++;
             _column.update[index] = handle;
+            
+            _synchronization.Unlock();
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -140,5 +143,59 @@ namespace revecs.Core.Boards
         {
             _entityOnResizeListener.Dispose();
         }
+    }
+}
+
+public class TestSynchro
+{
+    public int _owner;
+    public int _depth;
+
+    public TestSynchro() => this._owner = 0;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public SyncContext Synchronize() => new SyncContext(this);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void Lock()
+    {
+        int currentManagedThreadId = Environment.CurrentManagedThreadId;
+        int num = 0;
+        while (Interlocked.CompareExchange(ref this._owner, currentManagedThreadId, 0) != currentManagedThreadId)
+            ++num;
+        if (num != 0)
+            return;
+        ++this._depth;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void Unlock(bool use = false)
+    {
+        if (this._depth > 0)
+        {
+            --this._depth;
+        }
+        else
+        {
+            if (Environment.CurrentManagedThreadId != Interlocked.Exchange(ref this._owner, 0))
+                throw new UnauthorizedAccessException("Unlocking failure");
+            if (!use)
+                Interlocked.MemoryBarrier();
+        }
+    }
+
+    public readonly struct SyncContext : IDisposable
+    {
+        private readonly TestSynchro _synchronizer;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public SyncContext(TestSynchro synchronizer)
+        {
+            this._synchronizer = synchronizer;
+            this._synchronizer.Lock();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Dispose() => this._synchronizer.Unlock();
     }
 }

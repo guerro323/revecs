@@ -5,9 +5,9 @@ namespace revecs.Core;
 
 public ref struct EntityComponentAccessor<T>
 {
-    public EntityComponentBoardBase Reader;
+    public ComponentBoardBase Reader;
 
-    public EntityComponentAccessor(EntityComponentBoardBase reader)
+    public EntityComponentAccessor(ComponentBoardBase reader)
     {
         Reader = reader;
     }
@@ -21,5 +21,14 @@ public ref struct EntityComponentAccessor<T>
             return ref Unsafe.NullRef<T>();
 
         return ref this[handle][0];
+    }
+
+    public ref T FirstOrThrow(UEntityHandle ent)
+    {
+        ref var val = ref TryGetFirst(ent);
+        if (Unsafe.IsNullRef(ref val))
+            throw new NullReferenceException($"{typeof(T)} for {ent}");
+
+        return ref val;
     }
 }

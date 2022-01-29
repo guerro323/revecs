@@ -6,51 +6,34 @@ using revecs.Utility;
 
 namespace revecs.Extensions.RelativeEntity;
 
-public class RelativeParentEntityBoard : EntityComponentBoardBase
+public class RelativeParentEntityBoard : ComponentBoardBase
 {
     private readonly RelativeEntityMainBoard _mainBoard;
-    private readonly EntityComponentLinkBoard _componentLinkBoard;
 
     public RelativeParentEntityBoard(RevolutionWorld world) : base(world)
     {
         _mainBoard = world.GetBoard<RelativeEntityMainBoard>(RelativeEntityMainBoard.BoardName);
-        _componentLinkBoard = world.GetBoard<EntityComponentLinkBoard>("EntityComponentLink");
     }
 
     public override void Dispose()
     {
 
     }
-
-    public override void AddComponent(Span<UEntityHandle> entities,
-        Span<UComponentReference> _0, Span<byte> _1, bool _2)
+    
+    public override void AddComponent(UEntityHandle handle, Span<byte> data)
     {
-        foreach (var entity in entities)
-        {
-            _componentLinkBoard.GetColumn(ComponentType)[entity.Id] = EntityComponentLink.Reference
-            (
-                new UComponentHandle(entity.Id)
-            );
-            
-            World.ArchetypeUpdateBoard.Queue(entity);
-        }
+        if (!HasComponentBoard.SetAndGetOld(ComponentType, handle, true))
+            World.ArchetypeUpdateBoard.Queue(handle);
     }
 
-    public override void RemoveComponent(Span<UEntityHandle> entities, Span<bool> removed)
+    public override void RemoveComponent(UEntityHandle handle)
     {
         var column = _mainBoard.columns[ComponentType.Handle];
-        
-        var nullFakeReference = EntityComponentLink.Reference(default);
-        foreach (var entity in entities)
-        {
-            _componentLinkBoard.GetColumn(ComponentType)[entity.Id] = nullFakeReference;
-
-            var list = column.children[entity.Id];
-            while (list.Count > 0)
-                _mainBoard.SetLinked(ComponentType, default, list[^1]);
+        var list = column.children[handle.Id];
+        while (list.Count > 0)
+            _mainBoard.SetLinked(ComponentType, default, list[^1]);
             
-            World.ArchetypeUpdateBoard.Queue(entity);
-        }
+        World.ArchetypeUpdateBoard.Queue(handle);
     }
 
     public override Span<byte> GetComponentData(UEntityHandle handle)

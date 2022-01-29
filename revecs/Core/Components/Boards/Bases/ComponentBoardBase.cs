@@ -4,10 +4,11 @@ namespace revecs.Core.Components.Boards.Bases
 {
     public abstract class ComponentBoardBase : BoardBase
     {
-        public bool CustomEntityOperation;
-
+        protected EntityHasComponentBoard HasComponentBoard;
+        
         public ComponentBoardBase(RevolutionWorld world) : base(world)
         {
+            HasComponentBoard = world.EntityHasComponentBoard;
         }
 
         public ComponentType ComponentType { get; private set; }
@@ -21,5 +22,12 @@ namespace revecs.Core.Components.Boards.Bases
         protected virtual void CustomSetComponentType(ref ComponentType type)
         {
         }
+
+        public abstract void AddComponent(UEntityHandle handle, Span<byte> data);
+
+        public abstract void RemoveComponent(UEntityHandle handle);
+
+        public abstract Span<byte> GetComponentData(UEntityHandle handle);
+        public abstract Span<T> GetComponentData<T>(UEntityHandle handle);
     }
 }

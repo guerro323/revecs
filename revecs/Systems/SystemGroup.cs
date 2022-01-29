@@ -81,14 +81,12 @@ public class SystemGroup
         // Phase 3 - Queue batches
         foreach (var (handle, system) in _systems)
         {
-            {
-                World.GetComponentData(handle, _systemStateComponent) = SystemState.Queued;
-            }
             var systemBatch = system.Queue(handle, World, runner);
             {
                 World.GetComponentData(handle, _currentSystemBatchComponent) = systemBatch;
-                if (systemBatch == default)
-                    World.GetComponentData(handle, _systemStateComponent) = SystemState.None;
+                World.GetComponentData(handle, _systemStateComponent) = systemBatch == default 
+                    ? SystemState.None 
+                    : SystemState.Queued;
             }
 
             if (systemBatch != default)

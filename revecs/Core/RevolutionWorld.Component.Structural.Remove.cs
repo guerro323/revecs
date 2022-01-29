@@ -11,34 +11,12 @@ namespace revecs.Core
 #if DEBUG
             ThrowOnInvalidHandle(handle);
 #endif
+            if (!HasComponent(handle, type))
+                return false;
 
             var board = ComponentTypeBoard.Boards[type.Handle];
-            if (board.CustomEntityOperation)
-            {
-                var entityBoard = Unsafe.As<EntityComponentBoardBase>(board);
-                var output = false;
-
-                entityBoard.RemoveComponent(
-                    MemoryMarshal.CreateSpan(ref handle, 1),
-                    MemoryMarshal.CreateSpan(ref output, 1)
-                );
-
-                return output;
-            }
-
-            var linkedBoard = Unsafe.As<LinkedComponentBoardBase>(board);
-            if (GameWorldLowLevel.RemoveComponentReference(
-                linkedBoard,
-                type,
-                EntityComponentLinkBoard,
-                handle
-            ))
-            {
-                ArchetypeUpdateBoard.Queue(handle);
-                return true;
-            }
-
-            return false;
+            board.RemoveComponent(handle);
+            return true;
         }
     }
 }

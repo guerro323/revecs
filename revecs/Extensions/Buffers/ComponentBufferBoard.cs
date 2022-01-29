@@ -6,8 +6,7 @@ using revecs.Utility;
 
 namespace revecs.Extensions.Buffers;
 
-public class ComponentBufferBoard : LinkedComponentBoardBase,
-    IComponentBoardHasHandleReader
+public class ComponentBufferBoard : LinkedComponentBoardBase
 {
     internal (PooledList<byte>[] data, BufferDataNonGeneric[] helper, byte h) column;
 
@@ -23,11 +22,6 @@ public class ComponentBufferBoard : LinkedComponentBoardBase,
                 column.helper[prev] = new BufferDataNonGeneric(column.data[prev]);
             }
         }, true);
-    }
-
-    public Span<byte> Read(in UComponentHandle handle)
-    {
-        return column.data[handle.Id].Span;
     }
 
     public Span<T> Read<T>(in UComponentHandle handle)
@@ -49,34 +43,41 @@ public class ComponentBufferBoard : LinkedComponentBoardBase,
         foreach (var data in column.data)
             data.Dispose();
     }
-
-    public override void CreateComponent(Span<UComponentHandle> output, Span<byte> data, bool singleData)
-    {
-        base.CreateComponent(output, data, singleData);
-        if (data.Length == 0)
-            return;
-
-        if (singleData)
-        {
-            foreach (var handle in output)
-            {
-                column.data[handle.Id].AddRange(data);
-            }
-        }
-        else
-        {
-            throw new InvalidOperationException("does not know");
-        }
-    }
-
-    public override void DestroyComponent(UComponentHandle handle)
-    {
-        base.DestroyComponent(handle);
-        column.data[handle.Id].Dispose();
-    }
-
+    
     public override bool Support<T>()
     {
         return BufferManagedTypeData<T>.IsBufferData || (base.Support<T>() && !ManagedTypeData<T>.ContainsReference);
+    }
+
+    public override void AddComponent(UEntityHandle handle, Span<byte> data)
+    {
+        ref var component = ref BaseAddComponent(handle);
+        column.data[component.Id].AddRange(data);
+    }
+
+    public override void RemoveComponent(UEntityHandle handle)
+    {
+        var component = BaseRemoveComponent(handle);
+        column.data[component.Id].Dispose();
+    }
+
+    public override Span<byte> GetComponentData(UEntityHandle handle)
+    {
+        return column.data[EntityLink[handle.Id].Id].Span;
+    }
+
+    public override Span<T> GetComponentData<T>(UEntityHandle handle)
+    {
+        var component = EntityLink[handle.Id].Id;
+        if (BufferManagedTypeData<T>.IsBufferData)
+        {
+            ref var buffer = ref column.helper[component];
+
+            return buffer
+                .ToSpan()
+                .UnsafeCast<BufferDataNonGeneric, T>();
+        }
+
+        return column.data[component].Span.UnsafeCast<byte, T>();
     }
 }

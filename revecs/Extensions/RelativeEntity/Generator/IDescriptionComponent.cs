@@ -18,7 +18,7 @@ public interface IDescriptionComponent : IRevolutionComponent
 
 public const string AccessorAccess_FieldType = ""ComponentSetAccessor<UEntityHandle>"";
 public const string AccessorAccess_Init = ""[field] = [world].AccessComponentSet([componentType].UnsafeCast<UEntityHandle>());"";
-public const string AccessorAccess_Access = ""[value] = [access] [field].FirstOrThrow([entity])"";
+public const string AccessorAccess_Access = ""[access] [field].FirstOrThrow([entity])"";
 public const string AccessorAccess_ValueType = ""UEntityHandle"";
 
 public const string WorldAccess_Access = ""[value] = [access] [world].GetComponentData([entity], [componentType].UnsafeCast<UEntityHandle>())"";
@@ -52,7 +52,7 @@ public const string WorldAccess_ValueType = ""UEntityHandle"";
 
 public const string AccessorAccess_FieldType = ""ComponentSetAccessor<UEntityHandle>"";
 public const string AccessorAccess_Init = ""[field] = [world].AccessComponentSet([componentType].UnsafeCast<UEntityHandle>());"";
-public const string AccessorAccess_Access = ""[value] = [field][[entity]]"";
+public const string AccessorAccess_Access = ""[field][[entity]]"";
 public const string AccessorAccess_ValueType = ""ReadOnlySpan<UEntityHandle>"";
 
 public const string WorldAccess_Access = ""[value] = [world].ReadComponent([entity], [componentType].UnsafeCast<UEntityHandle>())"";
@@ -109,9 +109,9 @@ public const string WorldAccess_ValueType = ""ReadOnlySpan<UEntityHandle>"";
                 public const bool WriteAccess = true;
 
                 public const string Body = @""
-        public UComponentReference Add[Type]Relative(in UEntityHandle handle, in UEntityHandle target)
+        public void Add[Type]Relative(in UEntityHandle handle, in UEntityHandle target)
         {
-            return World.AddComponent(handle, [Type]RelativeType, target);
+            World.AddComponent(handle, [Type]RelativeType, target);
         }
 
         public bool Remove[Type]Relative(in UEntityHandle handle)
@@ -120,7 +120,7 @@ public const string WorldAccess_ValueType = ""ReadOnlySpan<UEntityHandle>"";
         }
 "";
 
-                UComponentReference Add[Type]Relative(in UEntityHandle handle, in UEntityHandle target) => throw new NotImplementedException();
+                void Add[Type]Relative(in UEntityHandle handle, in UEntityHandle target) => throw new NotImplementedException();
                 
                 bool Remove[Type]Relative(in UEntityHandle handle) => throw new NotImplementedException();
             }
@@ -176,9 +176,9 @@ public const string WorldAccess_ValueType = ""ReadOnlySpan<UEntityHandle>"";
                 public const bool WriteAccess = true;
 
                 public const string Body = @""
-        public UComponentReference Add[Type](in UEntityHandle handle)
+        public void Add[Type](in UEntityHandle handle)
         {
-            return World.AddComponent(handle, [Type]Type, default);
+            World.AddComponent(handle, [Type]Type, default);
         }
 
         public bool Remove[Type](in UEntityHandle handle)
@@ -187,7 +187,7 @@ public const string WorldAccess_ValueType = ""ReadOnlySpan<UEntityHandle>"";
         }
 "";
 
-                UComponentReference Add[Type](in UEntityHandle handle) => throw new NotImplementedException();
+                void Add[Type](in UEntityHandle handle) => throw new NotImplementedException();
                 
                 bool Remove[Type](in UEntityHandle handle) => throw new NotImplementedException();
             }

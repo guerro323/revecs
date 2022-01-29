@@ -2,70 +2,45 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using revecs.Core.Components.Boards.Bases;
 using revecs.Core.Components.Boards.Modifiers;
+using revecs.Utility;
 
 namespace revecs.Core.Components.Boards
 {
-    public class SparseSetManagedComponentBoard<T> : LinkedComponentBoardBase, IComponentBoardHasHandleReader,
-        IComponentBoardHasGlobalReader
+    public class SparseSetManagedComponentBoard<T> : LinkedComponentBoardBase
     {
-        private (T[] data, byte h) column;
+        public T[] ComponentDataColumn;
 
         public SparseSetManagedComponentBoard(int size, RevolutionWorld world) : base(size, world)
         {
-            CurrentSize.Subscribe((_, next) => { Array.Resize(ref column.data, next * ComponentByteSize); }, true);
-        }
-
-        public Span<byte> Read()
-        {
-            return MemoryMarshal.CreateSpan(
-                ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(column.data.AsSpan())),
-                column.data.Length * ComponentByteSize
-            );
-        }
-
-        public Span<TOther> Read<TOther>()
-        {
-            return MemoryMarshal.CreateSpan(
-                ref Unsafe.As<T, TOther>(ref MemoryMarshal.GetReference(column.data.AsSpan())),
-                column.data.Length
-            );
-        }
-
-        public Span<byte> Read(in UComponentHandle handle)
-        {
-            return MemoryMarshal.CreateSpan(
-                ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(column.data.AsSpan())),
-                column.data.Length * ComponentByteSize
-            ).Slice(handle.Id * ComponentByteSize, ComponentByteSize);
-        }
-
-        public Span<TOther> Read<TOther>(in UComponentHandle handle)
-        {
-            return MemoryMarshal.CreateSpan(
-                ref Unsafe.As<T, TOther>(ref MemoryMarshal.GetReference(column.data.AsSpan())),
-                1
-            );
+            CurrentSize.Subscribe((_, next) => { Array.Resize(ref ComponentDataColumn, next * ComponentByteSize); },
+                true);
         }
 
         public override void Dispose()
         {
         }
 
-        public override void CreateComponent(Span<UComponentHandle> output, Span<byte> data, bool singleData)
+        public override void AddComponent(UEntityHandle handle, Span<byte> data)
         {
-            base.CreateComponent(output, data, singleData);
-            if (singleData)
-            {
-                foreach (var handle in output)
-                    data.CopyTo(Read(handle));
-            }
-            else
-            {
-                for (var i = 0; i < output.Length; i++)
-                {
-                    data[(i * ComponentByteSize)..].CopyTo(Read(output[i]));
-                }
-            }
+            ref var component = ref BaseAddComponent(handle);
+            var span = data.UnsafeCast<byte, T>();
+            ComponentDataColumn[component.Id] = span[0];
+        }
+
+        public override void RemoveComponent(UEntityHandle handle)
+        {
+            var component = BaseRemoveComponent(handle);
+            ComponentDataColumn[component.Id] = default!;
+        }
+
+        public override Span<byte> GetComponentData(UEntityHandle handle)
+        {
+            return ComponentDataColumn.AsSpan(handle.Id, 1).UnsafeCast<T, byte>();
+        }
+
+        public override Span<TTo> GetComponentData<TTo>(UEntityHandle handle)
+        {
+            return ComponentDataColumn.AsSpan(handle.Id, 1).UnsafeCast<T, TTo>();
         }
     }
 }

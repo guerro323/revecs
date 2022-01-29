@@ -11,17 +11,17 @@ public static class GameWorldExtensions
         return new BufferType<T>(componentType);
     }
 
-    public static BufferData<T> ReadBuffer<T>(this RevolutionWorld world, UEntityHandle handle, BufferType<T> bufferType)
+    public static BufferData<T> ReadBuffer<T>(this RevolutionWorld world, UEntityHandle handle,
+        BufferType<T> bufferType)
         where T : struct
     {
-        var board = world.ComponentTypeBoard.Boards[bufferType.ComponentType.Handle] as ComponentBufferBoard;
-        if (board == null)
+        if (world.ComponentTypeBoard.Boards[bufferType.ComponentType.Handle] is not ComponentBufferBoard board)
             throw new InvalidCastException(nameof(board));
 
-        var componentRef = world.EntityComponentLinkBoard.GetColumn(bufferType.ComponentType)[handle.Id];
-        if (componentRef.Null)
+        var componentRef = board.EntityLink[handle.Id];
+        if (componentRef.Id == 0)
             throw new InvalidOperationException();
 
-        return new BufferData<T>(board.column.data[componentRef.Assigned]);
+        return new BufferData<T>(board.column.data[componentRef.Id]);
     }
 }

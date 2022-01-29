@@ -27,7 +27,7 @@ public interface IBufferComponent : IRevolutionComponent
 
             public const string AccessorAccess_FieldType = ""ComponentSetAccessor<BufferData<[TypeAddr]>>"";
             public const string AccessorAccess_Init = ""[field] = [world].AccessComponentSet([componentType].UnsafeCast<BufferData<[TypeAddr]>>());"";
-            public const string AccessorAccess_Access = ""[value] = [field].FirstOrThrow([entity])"";
+            public const string AccessorAccess_Access = ""[field].FirstOrThrow([entity])"";
             public const string AccessorAccess_ValueType = ""BufferData<[TypeAddr]>"";
 
             public const string WorldAccess_Access = ""[value] = [access] [world].GetComponentData([entity], [componentType].UnsafeCast<BufferData<[TypeAddr]>>())"";
@@ -95,9 +95,9 @@ public interface IBufferComponent : IRevolutionComponent
             public interface IAdmin : IRevolutionCommand, IWrite, IRead
             {
                 public const string Body = @""
-        public UComponentReference Add[Type](in UEntityHandle handle, in Span<[TypeAddr]> data = default)
+        public void Add[Type](in UEntityHandle handle, in Span<[TypeAddr]> data = default)
         {
-            return World.AddComponent(handle, [Type]Type, data);
+            World.AddComponent(handle, [Type]Type, data);
         }
 
         public bool Remove[Type](in UEntityHandle handle)
@@ -106,7 +106,7 @@ public interface IBufferComponent : IRevolutionComponent
         }
 "";
 
-                UComponentReference Add[Type](in UEntityHandle handle, in Span<[TypeAddr]> data = default) => throw new NotImplementedException();
+                void Add[Type](in UEntityHandle handle, in Span<[TypeAddr]> data = default) => throw new NotImplementedException();
                 
                 bool Remove[Type](in UEntityHandle handle) => throw new NotImplementedException();
             }

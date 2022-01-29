@@ -3,42 +3,33 @@ using revecs.Core.Components.Boards.Bases;
 
 namespace revecs.Core.Components.Boards;
 
-public class TagComponentBoard : EntityComponentBoardBase
+public class TagComponentBoard : ComponentBoardBase
 {
-    private EntityComponentLinkBoard _componentLinkBoard;
-
     public TagComponentBoard(RevolutionWorld world) : base(world)
     {
-        _componentLinkBoard = world.GetBoard<EntityComponentLinkBoard>("EntityComponentLink");
     }
 
     public override void Dispose()
     {
     }
 
-    public override void AddComponent(Span<UEntityHandle> entities, Span<UComponentReference> output,
-        Span<byte> _0, bool _1)
+    public override void AddComponent(UEntityHandle handle, Span<byte> data)
     {
-        var validReference = new UComponentReference(ComponentType, new UComponentHandle(1));
-        foreach (ref readonly var entity in entities)
+        ref var hasComponent = ref HasComponentBoard.GetColumn(ComponentType)[handle.Id];
+        if (!hasComponent)
         {
-            _componentLinkBoard.AssignComponentReference(entity, validReference);
-            
-            World.ArchetypeUpdateBoard.Queue(entity);
+            hasComponent = true;
+            World.ArchetypeUpdateBoard.Queue(handle);
         }
-
-        foreach (ref var result in output)
-            result = validReference;
     }
 
-    public override void RemoveComponent(Span<UEntityHandle> entities, Span<bool> removed)
+    public override void RemoveComponent(UEntityHandle handle)
     {
-        var nullReference = new UComponentReference(ComponentType, default);
-        for (var i = 0; i < entities.Length; i++)
+        ref var hasComponent = ref HasComponentBoard.GetColumn(ComponentType)[handle.Id];
+        if (hasComponent)
         {
-            removed[i] = _componentLinkBoard.AssignComponentReference(entities[i], nullReference).Id != 0;
-            
-            World.ArchetypeUpdateBoard.Queue(entities[i]);
+            hasComponent = false;
+            World.ArchetypeUpdateBoard.Queue(handle);
         }
     }
 

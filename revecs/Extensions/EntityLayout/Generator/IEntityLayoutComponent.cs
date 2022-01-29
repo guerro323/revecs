@@ -75,9 +75,9 @@ public interface IEntityLayoutComponent : IRevolutionComponent
 "";
 
                 public const string Body = @""
-        public UComponentReference Add[Type](in UEntityHandle handle)
+        public void Add[Type](in UEntityHandle handle)
         {
-            return World.AddComponent(handle, [Type]Type, default);
+            World.AddComponent(handle, [Type]Type, default);
         }
 
         public bool Remove[Type](in UEntityHandle handle)
@@ -86,7 +86,7 @@ public interface IEntityLayoutComponent : IRevolutionComponent
         }
 "";
 
-                UComponentReference Add[Type](in UEntityHandle handle) => throw new NotImplementedException();
+                void Add[Type](in UEntityHandle handle) => throw new NotImplementedException();
                 bool Remove[Type](in UEntityHandle handle) => throw new NotImplementedException();
             }
         }

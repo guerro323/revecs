@@ -43,30 +43,30 @@ public static class SystemComponentExtensions
 class SystemComponentBoard : TagComponentBoard
 {
     private UEntityHandle _currentHandle;
-    
+
     public SystemComponentBoard(RevolutionWorld world) : base(world)
     {
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public UEntityHandle GetHandle() => _currentHandle;
-    
-    public override void AddComponent(Span<UEntityHandle> entities, Span<UComponentReference> output, Span<byte> _0, bool _1)
+
+    public override void AddComponent(UEntityHandle entity, Span<byte> _)
     {
         if (!_currentHandle.Equals(default))
             throw new InvalidOperationException(
                 $"A system can't be present more than one time. Occured on {World.ComponentTypeBoard.Names[ComponentType.Handle]}"
             );
-        
-        _currentHandle = entities[0];
-        
-        base.AddComponent(entities, output, _0, _1);
+
+        _currentHandle = entity;
+
+        base.AddComponent(entity, _);
     }
 
-    public override void RemoveComponent(Span<UEntityHandle> entities, Span<bool> removed)
+    public override void RemoveComponent(UEntityHandle entity)
     {
         _currentHandle = default;
-        
-        base.RemoveComponent(entities, removed);
+
+        base.RemoveComponent(entity);
     }
 }

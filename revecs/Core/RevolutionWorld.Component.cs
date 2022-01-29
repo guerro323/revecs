@@ -30,7 +30,7 @@ namespace revecs.Core
             if (!Exists(handle))
                 return false;
 
-            return EntityComponentLinkBoard.GetColumn(type)[handle.Id].Valid;
+            return EntityHasComponentBoard.GetColumn(type)[handle.Id];
         }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -39,18 +39,7 @@ namespace revecs.Core
             ThrowOnInvalidHandle(handle);
 
             var board = ComponentTypeBoard.Boards[type.Handle];
-            if (board.CustomEntityOperation) return Unsafe.As<EntityComponentBoardBase>(board).GetComponentData(handle);
-
-            if (board is IComponentBoardHasHandleReader hasReader)
-            {
-                var link = EntityComponentLinkBoard.GetColumn(type)[handle.Id];
-                if (!link.IsReference)
-                    throw new InvalidOperationException($"{handle} has no {ComponentTypeBoard.Names[type.Handle]}");
-
-                return hasReader.Read(link.Handle);
-            }
-
-            return Span<byte>.Empty;
+            return Unsafe.As<ComponentBoardBase>(board).GetComponentData(handle);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -61,20 +50,8 @@ namespace revecs.Core
             var board = ComponentTypeBoard.Boards[type.Handle];
 
             BoardSupportTypeThrow<T>(type, board);
-
-            if (board.CustomEntityOperation)
-                return Unsafe.As<EntityComponentBoardBase>(board).GetComponentData<T>(handle);
-
-            if (board is IComponentBoardHasHandleReader hasReader)
-            {
-                var link = EntityComponentLinkBoard.GetColumn(type)[handle.Id];
-                if (!link.IsReference)
-                    throw new InvalidOperationException($"{handle} has no {ComponentTypeBoard.Names[type.Handle]}");
-
-                return hasReader.Read<T>(link.Handle);
-            }
-
-            return Span<T>.Empty;
+            
+            return Unsafe.As<ComponentBoardBase>(board).GetComponentData<T>(handle);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -85,26 +62,7 @@ namespace revecs.Core
             var board = ComponentTypeBoard.Boards[type.Handle];
             // We assume that the user took the type arg from GetComponentType(...)
             // so there should be no need to check IComponentBoardHasTypeSupport.Support<T>()
-
-            if (board.CustomEntityOperation)
-                return Unsafe.As<EntityComponentBoardBase>(board).GetComponentData<T>(handle);
-
-            if (board is IComponentBoardHasHandleReader hasReader)
-            {
-                var link = EntityComponentLinkBoard.GetColumn(type)[handle.Id];
-                if (!link.IsReference)
-                    throw new InvalidOperationException($"{handle} has no {ComponentTypeBoard.Names[type.Handle]}");
-
-                return hasReader.Read<T>(link.Handle);
-            }
-
-            return Span<T>.Empty;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Span<EntityComponentLink> GetEntityComponentLink(ComponentType type)
-        {
-            return EntityComponentLinkBoard.GetColumn(type);
+            return Unsafe.As<ComponentBoardBase>(board).GetComponentData<T>(handle);
         }
     }
 }

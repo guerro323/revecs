@@ -6,53 +6,44 @@ using revecs.Utility;
 
 namespace revecs.Extensions.LinkedEntity;
 
-public class LinkedParentEntityBoard : EntityComponentBoardBase
+public class LinkedParentEntityBoard : ComponentBoardBase
 {
     private readonly LinkedEntityMainBoard _mainBoard;
-    private readonly EntityComponentLinkBoard _componentLinkBoard;
-
     public LinkedParentEntityBoard(RevolutionWorld world) : base(world)
     {
         _mainBoard = world.GetBoard<LinkedEntityMainBoard>(LinkedEntityMainBoard.BoardName);
-        _componentLinkBoard = world.GetBoard<EntityComponentLinkBoard>("EntityComponentLink");
     }
 
     public override void Dispose()
     {
 
     }
-
-    public override void AddComponent(Span<UEntityHandle> entities,
-        Span<UComponentReference> _0, Span<byte> _1, bool _2)
+    
+    public override void AddComponent(UEntityHandle entity, Span<byte> data)
     {
-        foreach (var entity in entities)
-        {
-            _componentLinkBoard.GetColumn(ComponentType)[entity.Id] = EntityComponentLink.Reference(
-                new UComponentHandle(entity.Id)
-            );
-        }
+        if (!HasComponentBoard.SetAndGetOld(ComponentType, entity, true))
+            World.ArchetypeUpdateBoard.Queue(entity);
     }
 
-    public override void RemoveComponent(Span<UEntityHandle> entities, Span<bool> removed)
+    public override void RemoveComponent(UEntityHandle entity)
     {
-        var nullFakeReference = EntityComponentLink.Reference(default);
-        foreach (var entity in entities)
+        if (!HasComponentBoard.SetAndGetOld(ComponentType, entity, true))
+            return;
+        
+        var children = _mainBoard.column.children[entity.Id].Span;
+        var childrenLength = children.Length;
+        for (var ent = 0; ent < childrenLength; ent++)
         {
-            _componentLinkBoard.GetColumn(ComponentType)[entity.Id] = nullFakeReference;
-
-            var children = _mainBoard.column.children[entity.Id].Span;
-            var childrenLength = children.Length;
-            for (var ent = 0; ent < childrenLength; ent++)
+            var linkedEntity = children[ent];
+            if (World.Exists(linkedEntity))
             {
-                var linkedEntity = children[ent];
-                if (World.Exists(linkedEntity))
-                {
-                    World.DestroyEntity(linkedEntity);
-                    ent--;
-                    childrenLength--;
-                }
+                World.DestroyEntity(linkedEntity);
+                ent--;
+                childrenLength--;
             }
         }
+        
+        World.ArchetypeUpdateBoard.Queue(entity);
     }
 
     public override Span<byte> GetComponentData(UEntityHandle handle)

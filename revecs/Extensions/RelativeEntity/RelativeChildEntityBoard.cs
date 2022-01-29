@@ -1,3 +1,4 @@
+using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
 using revecs.Core;
 using revecs.Core.Boards;
@@ -6,15 +7,13 @@ using revecs.Utility;
 
 namespace revecs.Extensions.RelativeEntity;
 
-public class RelativeChildEntityBoard : EntityComponentBoardBase
+public class RelativeChildEntityBoard : ComponentBoardBase
 {
     private readonly RelativeEntityMainBoard _mainBoard;
-    private readonly EntityComponentLinkBoard _componentLinkBoard;
 
     public RelativeChildEntityBoard(RevolutionWorld world) : base(world)
     {
         _mainBoard = world.GetBoard<RelativeEntityMainBoard>(RelativeEntityMainBoard.BoardName);
-        _componentLinkBoard = world.EntityComponentLinkBoard;
     }
 
     public ComponentType DescriptionType { get; init; }
@@ -24,8 +23,7 @@ public class RelativeChildEntityBoard : EntityComponentBoardBase
 
     }
 
-    public override void AddComponent(Span<UEntityHandle> entities,
-        Span<UComponentReference> _0, Span<byte> data, bool singleData)
+    public override void AddComponent(UEntityHandle handle, Span<byte> data)
     {
         var parentSpan = data.UnsafeCast<byte, UEntityHandle>();
         if (parentSpan.Length == 0)
@@ -33,37 +31,21 @@ public class RelativeChildEntityBoard : EntityComponentBoardBase
             // don't add the component
             return;
         }
-        
-        if (singleData)
-        {
-            foreach (var entity in entities)
-            {
-                _componentLinkBoard.GetColumn(ComponentType)[entity.Id] = EntityComponentLink.Reference(
-                    new UComponentHandle(entity.Id)
-                );
-                _mainBoard.SetLinked(DescriptionType, parentSpan[0], entity);
-            }
-        }
-        else
-        {
-            for (var ent = 0; ent < entities.Length; ent++)
-            {
-                _componentLinkBoard.GetColumn(ComponentType)[entities[ent].Id] = EntityComponentLink.Reference(
-                    new UComponentHandle(entities[ent].Id)
-                );
-                _mainBoard.SetLinked(DescriptionType, parentSpan[ent], entities[ent]);
-            }
-        }
+
+        if (!HasComponentBoard.SetAndGetOld(ComponentType, handle, true))
+            World.ArchetypeUpdateBoard.Queue(handle);
+
+        foreach (var parent in parentSpan)
+            _mainBoard.SetLinked(DescriptionType, parent, handle);
     }
 
-    public override void RemoveComponent(Span<UEntityHandle> entities, Span<bool> removed)
+    public override void RemoveComponent(UEntityHandle handle)
     {
-        var nullFakeReference = EntityComponentLink.Reference(default);
-        foreach (var entity in entities)
-        {
-            _componentLinkBoard.GetColumn(ComponentType)[entity.Id] = nullFakeReference;
-            _mainBoard.SetLinked(DescriptionType, default, entity);
-        }
+        if (!HasComponentBoard.SetAndGetOld(ComponentType, handle, false))
+            return;
+
+        _mainBoard.SetLinked(DescriptionType, default, handle);
+        World.ArchetypeUpdateBoard.Queue(handle);
     }
 
     public override Span<byte> GetComponentData(UEntityHandle handle)
