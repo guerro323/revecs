@@ -180,11 +180,10 @@ using revtask.Helpers;
         {
             var structName = source.StructureName ?? source.Name;
             
-            //var interfaces = source.Header.Select(t => t.GetTypeName());*/
-            //sb.AppendLine($"    partial struct {structName} : {string.Join(",\n            ", interfaces)}\n    {{");
+            var interfaces = source.Header.Select(t => t.GetTypeName());
             if (structName.StartsWith("__"))
                 sb.Append("    [EditorBrowsable(EditorBrowsableState.Never)]");
-            sb.AppendLine($"    partial struct {structName}\n    {{");
+            sb.AppendLine($"    partial struct {structName} : {string.Join(",\n            ", interfaces)}\n    {{");
         }
 
         void EndCommand()
