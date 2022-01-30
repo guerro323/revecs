@@ -183,7 +183,7 @@ using revtask.Helpers;
             var interfaces = source.Header.Select(t => t.GetTypeName());
             if (structName.StartsWith("__"))
                 sb.Append("    [EditorBrowsable(EditorBrowsableState.Never)]");
-            sb.AppendLine($"    partial struct {structName} : {string.Join(",\n            ", interfaces)}\n    {{");
+            sb.AppendLine($"    partial struct {structName} : IRevolutionCommand, {string.Join(",\n            ", interfaces)}\n    {{");
         }
 
         void EndCommand()
