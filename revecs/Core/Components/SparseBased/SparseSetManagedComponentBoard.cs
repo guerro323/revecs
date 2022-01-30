@@ -22,9 +22,10 @@ namespace revecs.Core.Components.Boards
 
         public override void AddComponent(UEntityHandle handle, Span<byte> data)
         {
-            ref var component = ref BaseAddComponent(handle);
+            ref readonly var component = ref BaseAddComponent(handle);
             var span = data.UnsafeCast<byte, T>();
-            ComponentDataColumn[component.Id] = span[0];
+            if (span.Length > 0)
+                ComponentDataColumn[component.Id] = span[0];
         }
 
         public override void RemoveComponent(UEntityHandle handle)

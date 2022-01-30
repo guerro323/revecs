@@ -56,7 +56,6 @@ public static class SystemObjectExtensions
             throw new InvalidOperationException($"{typeof(T)} need to be a ISystem or IRevolutionSystem");
 
         var systemType = obj.World.GetSystemType<T>();
-        Console.WriteLine($"depend on {obj.World.GetSystemHandle(systemType)} (us: {obj.Handle})");
         obj.World.GetComponentData(obj.Handle, obj.DependenciesType)
             .Add(new SystemDependencies
             {
