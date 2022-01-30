@@ -52,7 +52,7 @@ public static class SystemObjectExtensions
 {
     public static void DependOn<T>(this SystemObject obj, bool requireSuccess = false)
     {
-        if (!typeof(T).GetInterfaces().Any(i => i != typeof(ISystem) && i != typeof(IRevolutionSystem)))
+        if (!typeof(T).GetInterfaces().Any(i => i == typeof(ISystem) || i == typeof(IRevolutionSystem)))
             throw new InvalidOperationException($"{typeof(T)} need to be a ISystem or IRevolutionSystem");
 
         var systemType = obj.World.GetSystemType<T>();
