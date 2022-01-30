@@ -627,7 +627,7 @@ using System.ComponentModel;
                             {
                                 Symbol = component,
                                 PublicName = name,
-                                CanWrite = name == "Write",
+                                CanWrite = modifier.Name is "Write",
                                 IsOption = modifier.Name is not ("Write" or "Read"),
                                 Modifier = eModifier,
                                 Custom = ComponentGenerator.GetCustomAccess(Compilation, component)
