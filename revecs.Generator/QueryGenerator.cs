@@ -79,19 +79,13 @@ using System;
 using System.Runtime.CompilerServices;
 namespace revecs
 {{
-    internal class QueryAttribute : Attribute {{ }}
-    internal class SingletonAttribute : Attribute {{ }}
-
     internal interface IQuery<T> {{ }}
-
-    /// <summary>Transform IQuery functions for singleton usage</summary>
-    internal interface {SingletonType} {{ }}
 
     internal interface Write<T> {{ }}
 
     internal interface Read<T> {{ }}
 
-    internal interface With<T> {{ }}
+    internal interface All<T> {{ }}
 
     internal interface None<T> {{ }}
 
@@ -546,7 +540,7 @@ using System.ComponentModel;
 
     public void CreateQueries()
     {
-        /*foreach (var tree in Compilation.SyntaxTrees)
+        foreach (var tree in Compilation.SyntaxTrees)
         {
             var semanticModel = Compilation.GetSemanticModel(tree);
             foreach (var declaredStruct in tree
@@ -567,6 +561,41 @@ using System.ComponentModel;
                 if (queryInterface != null)
                 {
                     Log(0, "Found Query: " + symbol.GetTypeName() + ", File: " + tree.FilePath);
+                    if (queryInterface.TypeArguments.Length == 0)
+                    {
+                        Context.ReportDiagnostic(Diagnostic.Create(
+                            new DiagnosticDescriptor(
+                                id: "REVQUERY001",
+                                title: "No T parameter found on Query",
+                                messageFormat: $"Parameter T was not found on query, introduce it as tuple.",
+                                category: "revecs.Query",
+                                defaultSeverity: DiagnosticSeverity.Error,
+                                isEnabledByDefault: true),
+                            queryInterface.Locations.FirstOrDefault()
+                        ));
+                        
+                        continue;   
+                    }
+                    
+                    var arg = queryInterface.TypeArguments[0];
+                    Log(1, "Param: " + arg);
+                    if (!arg.IsTupleType)
+                    {
+                        Context.ReportDiagnostic(Diagnostic.Create(
+                            new DiagnosticDescriptor(
+                                id: "REVQUERY002",
+                                title: "Invalid type on Query type parameter",
+                                messageFormat: $"Parameter T should be a tuple.",
+                                category: "revecs.Query",
+                                defaultSeverity: DiagnosticSeverity.Error,
+                                isEnabledByDefault: true),
+                            arg.Locations.FirstOrDefault()
+                        ));
+                        
+                        continue;
+                    }
+
+                    var tupleElements = ((INamedTypeSymbol) arg).TupleElements;
                     
                     var source = new QuerySource
                     (
@@ -574,20 +603,42 @@ using System.ComponentModel;
                         symbol.ContainingNamespace?.ToString(),
                         symbol.Name,
                         tree.FilePath,
-                        queryInterface.TypeArguments.Select(t =>
+                        tupleElements.Select(t =>
                         {
-                            Log(3, $"Found Argument {t.Name}");
-                            return (INamedTypeSymbol) t;
-                        }).Union(symbol.Interfaces.Where(inter =>
-                        {
-                            return !(SymbolEqualityComparer.Default.Equals(inter, queryInterface) || inter.Name == "IEquatable");
-                        }), SymbolEqualityComparer.Default).Cast<INamedTypeSymbol>().ToArray(),
+                            var modifier = (INamedTypeSymbol) t.Type;
+                            var component = (INamedTypeSymbol) modifier.TypeArguments[0];
+                            var name = component.Name;
+                            if (t.Name != t.CorrespondingTupleField?.Name)
+                                name = t.Name;
+                            
+                            Log(3, $"Found Argument {t.Name} ({name}) compo: {component}");
+
+                            var eModifier = modifier.Name.ToLower() switch
+                            {
+                                "write" or "read" or "all" => QueryArgument.EModifier.All,
+                                "or" => QueryArgument.EModifier.Or,
+                                "none" => QueryArgument.EModifier.None,
+                                _ => throw new InvalidOperationException("Invalid")
+                            };
+
+                            Log(4, "Option? " + (modifier.Name is not ("Write" or "Read")));
+
+                            return new QueryArgument
+                            {
+                                Symbol = component,
+                                PublicName = name,
+                                CanWrite = name == "Write",
+                                IsOption = modifier.Name is not ("Write" or "Read"),
+                                Modifier = eModifier,
+                                Custom = ComponentGenerator.GetCustomAccess(Compilation, component)
+                            };
+                        }).ToArray(),
                         IsRecord: symbol.IsRecord
                     );
                     
                     GenerateQuery(source);
                 }
             }
-        }*/
+        }
     }
 }
