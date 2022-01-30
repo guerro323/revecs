@@ -175,15 +175,25 @@ using revtask.Helpers;
         {
             foreach (var parent in parentTypes) sb.AppendLine("}");
         }
-        
+
         void BeginCommand()
         {
             var structName = source.StructureName ?? source.Name;
-            
+
             var interfaces = source.Header.Select(t => t.GetTypeName());
             if (structName.StartsWith("__"))
                 sb.Append("    [EditorBrowsable(EditorBrowsableState.Never)]");
-            sb.AppendLine($"    partial struct {structName} : IRevolutionCommand, {string.Join(",\n            ", interfaces)}\n    {{");
+
+            if (interfaces.Any())
+                sb.AppendLine(
+                    $"    partial struct {structName} :\n{string.Join(",\n            ", interfaces)}\n    {{"
+                );
+            else
+            {
+                sb.AppendLine(
+                    $"    partial struct {structName}\n    {{"
+                );
+            }
         }
 
         void EndCommand()
