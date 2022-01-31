@@ -669,7 +669,7 @@ using System.Runtime.InteropServices;
                     var paramSb = new StringBuilder();
                     for (var index = 0; index < q.Arguments.Length; index++)
                     {
-                        paramSb.Append($"__{q.Arguments[index].Modifier}<{q.Arguments[index].Symbol.Name}> _{index}");
+                        paramSb.Append($"__{q.Arguments[index].Modifier}<{q.Arguments[index].Symbol.GetTypeName()}> _{index}");
                         if (index + 1 < q.Arguments.Length)
                             paramSb.Append(", ");
                     }
