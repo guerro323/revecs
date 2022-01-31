@@ -50,26 +50,44 @@ public static class RevolutionSystemExtensions
 
 public static class SystemObjectExtensions
 {
-    public static void DependOn<T>(this SystemObject obj, bool requireSuccess = false)
+    public static void DependOn<T>(this SystemObject obj, bool requireSuccess = false, bool requireExisting = true)
     {
         if (!typeof(T).GetInterfaces().Any(i => i == typeof(ISystem) || i == typeof(IRevolutionSystem)))
             throw new InvalidOperationException($"{typeof(T)} need to be a ISystem or IRevolutionSystem");
 
         var systemType = obj.World.GetSystemType<T>();
+        var target = obj.World.GetSystemHandle(systemType);
+        if (!obj.World.Exists(target))
+        {
+            if (requireExisting)
+                throw new InvalidOperationException($"{typeof(T)} wasn't added to the system group");
+            
+            return;
+        }
+
         obj.World.GetComponentData(obj.Handle, obj.DependenciesType)
             .Add(new SystemDependencies
             {
-                Other = obj.World.GetSystemHandle(systemType),
+                Other = target,
                 RequireSuccess = requireSuccess
             });
     }
 
-    public static void AddForeignDependency<T>(this SystemObject obj, bool requireSuccess = false)
+    public static void AddForeignDependency<T>(this SystemObject obj, bool requireSuccess = false, bool requireExisting = true)
     {
         if (!typeof(T).GetInterfaces().Any(i => i == typeof(ISystem) || i == typeof(IRevolutionSystem)))
             throw new InvalidOperationException($"{typeof(T)} need to be a ISystem or IRevolutionSystem");
 
         var systemType = obj.World.GetSystemType<T>();
+        var target = obj.World.GetSystemHandle(systemType);
+        if (!obj.World.Exists(target))
+        {
+            if (requireExisting)
+                throw new InvalidOperationException($"{typeof(T)} wasn't added to the system group");
+            
+            return;
+        }
+
         obj.World.GetComponentData(obj.World.GetSystemHandle(systemType), obj.DependenciesType)
             .Add(new SystemDependencies
             {

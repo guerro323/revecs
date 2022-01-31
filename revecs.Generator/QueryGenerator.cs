@@ -618,9 +618,7 @@ using System.ComponentModel;
                     }
                     else
                     {
-                        var namedArg = (INamedTypeSymbol) arg;
-                        
-                        var modifier = (INamedTypeSymbol) namedArg;
+                        var modifier = (INamedTypeSymbol) arg;
                         var component = (INamedTypeSymbol) modifier.TypeArguments[0];
                         var name = component.Name;
 
