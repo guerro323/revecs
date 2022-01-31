@@ -201,6 +201,23 @@ using System.Runtime.InteropServices;
                 var isRes = identifier is "RequiredResource" or "OptionalResource";
                 var isQuery = identifier is "RequiredQuery" or "OptionalQuery";
 
+                (SyntaxNode node, string typeName) GetNodeAndName(SyntaxNode child)
+                {
+                    var qualifiedList = new List<QualifiedNameSyntax>();
+                    var typeList = new List<IdentifierNameSyntax>();
+                    
+                    GetNodes(child, qualifiedList);
+                    GetNodes(child, typeList);
+                    
+                    var typeName = string.Empty;
+                    foreach (var t in typeList)
+                    {
+                        typeName += t.GetFirstToken().Text;
+                    }
+                    
+                    return (qualifiedList.Count > 0 ? qualifiedList[0] : typeList[0], typeName);
+                }
+
                 if (isQuery)
                 {
                     Log(1, $"Found {identifier}");
@@ -210,25 +227,17 @@ using System.Runtime.InteropServices;
                     foreach (var arg in queryArgs.ChildNodes())
                     {
                         var modifierList = new List<GenericNameSyntax>();
-                        var typeList = new List<IdentifierNameSyntax>();
                         var nameList = new List<LiteralExpressionSyntax>();
                         GetNodes(arg, modifierList);
-                        GetNodes(arg, typeList);
                         GetNodes(arg, nameList);
-
-                        if (typeList.Count == 0)
-                        {
-                            throw new InvalidOperationException("Type list shouldn't be empty");
-                        }
 
                         if (modifierList.Count == 0)
                         {
                             throw new InvalidOperationException("Modifier list shouldn't be empty");
                         }
-
-                        var t = typeList[0];
+                        
                         var modifier = modifierList[0].GetFirstToken().Text;
-                        var typeName = t.GetFirstToken().Text;
+                        var (t, typeName) = GetNodeAndName(arg);
                         var alternativeName = nameList.Count == 0
                             ? typeName
                             : nameList[0].GetFirstToken().Value;
@@ -290,16 +299,7 @@ using System.Runtime.InteropServices;
 
                     var args = new List<QueryArgument>();
                     {
-                        var typeList = new List<IdentifierNameSyntax>();
-                        GetNodes(node, typeList);
-                        if (typeList.Count == 0)
-                        {
-                            throw new InvalidOperationException("no  type found");
-                        }
-
-                        var t = typeList[0];
-                        var typeName = t.GetFirstToken().Text;
-                        
+                        var (t, typeName) = GetNodeAndName(node);
                         var typeSymbolInfo = Compilation.GetSemanticModel(tree, true).GetSymbolInfo(t);
                         var typeSymbol =
                             (typeSymbolInfo.Symbol ?? typeSymbolInfo.CandidateSymbols.FirstOrDefault()) as

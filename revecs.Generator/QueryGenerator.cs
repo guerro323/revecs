@@ -579,38 +579,20 @@ using System.ComponentModel;
                     
                     var arg = queryInterface.TypeArguments[0];
                     Log(1, "Param: " + arg);
-                    if (!arg.IsTupleType)
-                    {
-                        Context.ReportDiagnostic(Diagnostic.Create(
-                            new DiagnosticDescriptor(
-                                id: "REVQUERY002",
-                                title: "Invalid type on Query type parameter",
-                                messageFormat: $"Parameter T should be a tuple.",
-                                category: "revecs.Query",
-                                defaultSeverity: DiagnosticSeverity.Error,
-                                isEnabledByDefault: true),
-                            arg.Locations.FirstOrDefault()
-                        ));
-                        
-                        continue;
-                    }
 
-                    var tupleElements = ((INamedTypeSymbol) arg).TupleElements;
-                    
-                    var source = new QuerySource
-                    (
-                        symbol.ContainingType,
-                        symbol.ContainingNamespace?.ToString(),
-                        symbol.Name,
-                        tree.FilePath,
-                        tupleElements.Select(t =>
+                    var header = Array.Empty<QueryArgument>();
+                    if (arg.IsTupleType)
+                    {
+                        var tupleElements = ((INamedTypeSymbol) arg).TupleElements;
+
+                        header = tupleElements.Select(t =>
                         {
                             var modifier = (INamedTypeSymbol) t.Type;
                             var component = (INamedTypeSymbol) modifier.TypeArguments[0];
                             var name = component.Name;
                             if (t.Name != t.CorrespondingTupleField?.Name)
                                 name = t.Name;
-                            
+
                             Log(3, $"Found Argument {t.Name} ({name}) compo: {component}");
 
                             var eModifier = modifier.Name.ToLower() switch
@@ -632,7 +614,46 @@ using System.ComponentModel;
                                 Modifier = eModifier,
                                 Custom = ComponentGenerator.GetCustomAccess(Compilation, component)
                             };
-                        }).ToArray(),
+                        }).ToArray();
+                    }
+                    else
+                    {
+                        var namedArg = (INamedTypeSymbol) arg;
+                        
+                        var modifier = (INamedTypeSymbol) namedArg;
+                        var component = (INamedTypeSymbol) modifier.TypeArguments[0];
+                        var name = component.Name;
+
+                        Log(3, $"Found Argument ({name}) compo: {component}");
+
+                        var eModifier = modifier.Name.ToLower() switch
+                        {
+                            "write" or "read" or "all" => QueryArgument.EModifier.All,
+                            "or" => QueryArgument.EModifier.Or,
+                            "none" => QueryArgument.EModifier.None,
+                            _ => throw new InvalidOperationException("Invalid")
+                        };
+
+                        Log(4, "Option? " + (modifier.Name is not ("Write" or "Read")));
+
+                        (header = new QueryArgument[1])[0] = new QueryArgument
+                        {
+                            Symbol = component,
+                            PublicName = name,
+                            CanWrite = modifier.Name is "Write",
+                            IsOption = modifier.Name is not ("Write" or "Read"),
+                            Modifier = eModifier,
+                            Custom = ComponentGenerator.GetCustomAccess(Compilation, component)
+                        };
+                    }
+                    
+                    var source = new QuerySource
+                    (
+                        symbol.ContainingType,
+                        symbol.ContainingNamespace?.ToString(),
+                        symbol.Name,
+                        tree.FilePath,
+                        header,
                         IsRecord: symbol.IsRecord
                     );
                     
