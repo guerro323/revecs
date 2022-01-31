@@ -16,8 +16,8 @@ public interface IDescriptionComponent : IRevolutionComponent
 
                 public const bool DisableReferenceWrapper = true;
 
-public const string AccessorAccess_FieldType = ""ComponentSetAccessor<UEntityHandle>"";
-public const string AccessorAccess_Init = ""[field] = [world].AccessComponentSet([componentType].UnsafeCast<UEntityHandle>());"";
+public const string AccessorAccess_FieldType = ""EntityComponentAccessor<UEntityHandle>"";
+public const string AccessorAccess_Init = ""[field] = [world].AccessEntityComponent([componentType].UnsafeCast<UEntityHandle>());"";
 public const string AccessorAccess_Access = ""[access] [field].FirstOrThrow([entity])"";
 public const string AccessorAccess_ValueType = ""UEntityHandle"";
 
@@ -50,8 +50,8 @@ public const string WorldAccess_ValueType = ""UEntityHandle"";
             public const bool DisableReferenceWrapper = true;
             public const bool DisablePassByReference = true;
 
-public const string AccessorAccess_FieldType = ""ComponentSetAccessor<UEntityHandle>"";
-public const string AccessorAccess_Init = ""[field] = [world].AccessComponentSet([componentType].UnsafeCast<UEntityHandle>());"";
+public const string AccessorAccess_FieldType = ""EntityComponentAccessor<UEntityHandle>"";
+public const string AccessorAccess_Init = ""[field] = [world].AccessEntityComponent([componentType].UnsafeCast<UEntityHandle>());"";
 public const string AccessorAccess_Access = ""[field][[entity]]"";
 public const string AccessorAccess_ValueType = ""ReadOnlySpan<UEntityHandle>"";
 
