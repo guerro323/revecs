@@ -36,12 +36,12 @@ namespace revecs.Core.Components.Boards
 
         public override Span<byte> GetComponentData(UEntityHandle handle)
         {
-            return ComponentDataColumn.AsSpan(handle.Id, 1).UnsafeCast<T, byte>();
+            return ComponentDataColumn.AsSpan(EntityLink[handle.Id].Id, 1).UnsafeCast<T, byte>();
         }
 
         public override Span<TTo> GetComponentData<TTo>(UEntityHandle handle)
         {
-            return ComponentDataColumn.AsSpan(handle.Id, 1).UnsafeCast<T, TTo>();
+            return ComponentDataColumn.AsSpan(EntityLink[handle.Id].Id, 1).UnsafeCast<T, TTo>();
         }
     }
 }
