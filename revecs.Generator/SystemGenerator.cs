@@ -394,6 +394,7 @@ using System.Runtime.InteropServices;
         void SystemVariables()
         {
             sb.AppendLine("        private SwapDependency _entityDependency;");
+            sb.AppendLine("        private SwapDependency _worldDependency;");
             sb.AppendLine("        private ComponentType<BufferData<SystemDependencies>> _systemDependenciesType;");
             sb.AppendLine("        private ComponentType<JobRequest> _currentSystemJobType;");
             sb.AppendLine("        private ComponentType<SystemState> _systemStateType;");
@@ -434,6 +435,7 @@ using System.Runtime.InteropServices;
 
             // This is done so that the initial method doesn't appear as unused
             _entityDependency = world.GetEntityDependency();
+            _worldDependency = world.GetWorldDependency();
             _systemDependenciesType = SystemDependencies.GetComponentType(world);
             _currentSystemJobType = CurrentSystemJobRequest.GetComponentType(world);
             _systemStateType = SystemStateStatic.GetComponentType(world);
@@ -480,6 +482,7 @@ using System.Runtime.InteropServices;
             job.__world = world;
             job.systemHandle = systemHandle; 
             job._entityDependency = _entityDependency;
+            job._worldDependency = _worldDependency;
             job._currentSystemJobType = _currentSystemJobType;
             job._systemDependenciesType = _systemDependenciesType;
             job._systemStateType = _systemStateType;
@@ -537,6 +540,9 @@ using System.Runtime.InteropServices;
                 canExecute.AppendLine("_entityDependency.IsCompleted(runner, info.Request)");
             }
 
+            setHandle.AppendLine("_worldDependency.AddReader(handle);");
+            canExecute.AppendLine("&& _worldDependency.IsCompleted(runner, info.Request)");
+
             foreach (var (name, obj) in arguments)
             {
                 if (obj is SystemQuery or CommandSource)
@@ -577,6 +583,7 @@ using System.Runtime.InteropServices;
             public RevolutionWorld __world;
 
             public SwapDependency _entityDependency;
+            public SwapDependency _worldDependency;
             public SystemHandle systemHandle;
 
             public ComponentType<JobRequest> _currentSystemJobType;

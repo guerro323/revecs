@@ -8,12 +8,12 @@ using revecs.Extensions.Generator;";
     public const string External = @"
     public static class [Type]Extensions
     {
-        public static ref [TypeAddr] Add[Type](this RevolutionWorld world, UEntityHandle entity) {
-            return ref world.GetComponentData(entity, [TypeAddr].Type.GetOrCreate(world));
+        public static void Add[Type](this RevolutionWorld world, UEntityHandle entity, [TypeAddr] data = default) {
+            world.AddComponent(entity, [TypeAddr].Type.GetOrCreate(world), data);
         } 
 
-        public static ref [TypeAddr] Remove[Type](this RevolutionWorld world, UEntityHandle entity) {
-            return ref world.GetComponentData(entity, [TypeAddr].Type.GetOrCreate(world));
+        public static bool Remove[Type](this RevolutionWorld world, UEntityHandle entity) {
+            return world.RemoveComponent(entity, [TypeAddr].Type.GetOrCreate(world));
         } 
 
         public static ref [TypeAddr] Get[Type](this RevolutionWorld world, UEntityHandle entity) {
@@ -31,7 +31,7 @@ using revecs.Extensions.Generator;";
         {
             public static ComponentType<[TypeAddr]> GetOrCreate(RevolutionWorld world)
             {
-                var existing = world.GetComponentType(typeof(TypeAddr).RuntimeTypeHandle, ManagedTypeData<[TypeAddr]>.Name);
+                var existing = world.GetComponentType(typeof([TypeAddr]).TypeHandle, ManagedTypeData<[TypeAddr]>.Name);
                 if (existing.Equals(default))
                     existing = world.RegisterComponent<SparseComponentSetup<[TypeAddr]>>();
 

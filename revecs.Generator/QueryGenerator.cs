@@ -209,6 +209,7 @@ using System.ComponentModel;
         {
             sb.AppendLine("        public readonly ArchetypeQuery Query;");
             sb.AppendLine("        public readonly SwapDependency EntityDependency;");
+            sb.AppendLine("        public readonly SwapDependency WorldDependency;");
 
             foreach (var arg in source.Arguments)
             {
@@ -285,6 +286,7 @@ using System.ComponentModel;
             );
 
             EntityDependency = world.GetEntityDependency();    
+            WorldDependency = world.GetWorldDependency();
 
 {expr}        
         }}
@@ -307,9 +309,13 @@ using System.ComponentModel;
                 dependencies.AppendLine("EntityDependency.IsCompleted(runner, request)");
             }
 
+            dependencies.AppendLine("&& WorldDependency.IsCompleted(runner, request)");
+
             var reader = new StringBuilder();
             if (!writeEntity)
                 reader.AppendLine("            EntityDependency.AddReader(request);");
+
+            reader.AppendLine("            WorldDependency.AddReader(request);");
 
             foreach (var arg in source.Arguments)
             {

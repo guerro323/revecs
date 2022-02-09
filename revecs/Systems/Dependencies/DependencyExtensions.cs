@@ -21,4 +21,13 @@ public static class DependencyExtensions
 
         return board.GetEntity();
     }
+
+    public static SwapDependency GetWorldDependency(this RevolutionWorld world)
+    {
+        var board = world.GetBoardOrDefault<DependencyBoard>(DependencyBoard.Name);
+        if (board is null)
+            world.AddBoard(DependencyBoard.Name, board = new DependencyBoard(world));
+
+        return board.GetWorld();
+    }
 }

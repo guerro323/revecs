@@ -10,6 +10,7 @@ public class DependencyBoard : BoardBase
     
     private SwapDependency[] column = Array.Empty<SwapDependency>();
     private SwapDependency entity;
+    private SwapDependency world;
 
     private IDisposable _subscribeDisposable;
 
@@ -29,6 +30,7 @@ public class DependencyBoard : BoardBase
         }, true);
 
         entity = new SwapDependency();
+        this.world = new SwapDependency();
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -46,6 +48,12 @@ public class DependencyBoard : BoardBase
     public SwapDependency GetEntity()
     {
         return entity;
+    }
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public SwapDependency GetWorld()
+    {
+        return world;
     }
 
     public override void Dispose()
