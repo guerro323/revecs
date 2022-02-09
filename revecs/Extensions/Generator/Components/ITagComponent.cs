@@ -8,7 +8,7 @@ public interface ITagComponent : IRevolutionComponent
     public static class [Type]Extensions
     {
         public static void Add[Type](this RevolutionWorld world, UEntityHandle entity) {
-            world.AddComponentData(entity, [TypeAddr].Type.GetOrCreate(world), default);
+            world.AddComponent(entity, [TypeAddr].Type.GetOrCreate(world), default);
         } 
 
         public static bool Remove[Type](this RevolutionWorld world, UEntityHandle entity) {
