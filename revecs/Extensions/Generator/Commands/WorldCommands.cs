@@ -10,7 +10,7 @@ namespace revecs.Extensions.Generator.Commands;
 /// Any <see cref="IRevolutionSystem"/> implementing this will have their permission highly elevated.
 /// The world permission is ultimate, it's the highest one.
 /// </remarks>
-public interface IWorldCommand
+public interface IWorldCommand : IRevolutionCommand
 {
     public const string Variables = @"
         private readonly SwapDependency WorldDependency;";
