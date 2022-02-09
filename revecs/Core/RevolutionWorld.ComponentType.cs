@@ -10,6 +10,32 @@ public partial class RevolutionWorld
 #if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
 #endif
+    public ComponentType GetComponentType(RuntimeTypeHandle typeHandle, string name)
+    {
+        if (ComponentTypeBoard.RuntimeTypeToId.TryGetValue(typeHandle, out var row))
+            return row;
+
+        row = GetComponentType(name);
+        if (!row.Equals(default))
+            ComponentTypeBoard.RuntimeTypeToId[typeHandle] = row;
+        
+        return row;
+    }
+
+#if !DEBUG
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
+    public ComponentType GetComponentType(string name)
+    {
+        if (ComponentTypeBoard.NameToId.TryGetValue(name, out var row))
+            return row;
+
+        return default;
+    }
+
+#if !DEBUG
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
     public ComponentType GetComponentType(ReadOnlySpan<char> name)
     {
         foreach (var row in ComponentTypeBoard.All)

@@ -6,6 +6,8 @@ namespace revecs.Extensions.RelativeEntity.Generator;
 public interface IDescriptionComponent : IRevolutionComponent
 {
     private const string RelativeType = @"
+            public static ComponentType ToComponentType(RevolutionWorld world) => Type.GetOrCreate(world);
+
             public static class Type
             {
                 public static ComponentType<UEntityHandle> GetOrCreate(RevolutionWorld world)
@@ -28,6 +30,8 @@ public const string WorldAccess_ValueType = ""UEntityHandle"";
 ";
     
     private const string Type = @"
+        public static ComponentType ToComponentType(RevolutionWorld world) => Type.GetOrCreate(world);
+
         public static class Type
         {
             public static ComponentType<UEntityHandle> GetOrCreate(RevolutionWorld world)

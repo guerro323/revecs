@@ -35,6 +35,10 @@ namespace revecs.Core.Boards
         public ReadOnlySpan<int> Sizes => column.size;
         public ReadOnlySpan<ComponentBoardBase> Boards => column.board;
 
+        public readonly Dictionary<string, ComponentType> NameToId = new();
+        // this will not keep GC references!
+        public readonly Dictionary<RuntimeTypeHandle, ComponentType> RuntimeTypeToId = new();
+
         public override void Dispose()
         {
             for (var i = 0; i < _rows.MaxId; i++)
@@ -63,6 +67,8 @@ namespace revecs.Core.Boards
             var row = _rows.CreateRow();
             column.name[row] = name;
             column.board[row] = board;
+
+            NameToId[name] = new ComponentType(row);
 
             if (board is IComponentBoardHasSize hasSize)
                 column.size[row] = hasSize.ComponentByteSize;

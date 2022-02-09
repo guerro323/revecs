@@ -1,3 +1,4 @@
+using revecs.Core;
 using revecs.Extensions.Generator.Components;
 using Xunit.Abstractions;
 
@@ -20,6 +21,9 @@ public class QueryTest : TestBase
     public QueryTest(ITestOutputHelper output) : base(output)
     {
         var query = new MyQuery(null);
-        query.First(); 
+        query.First();
+
+        var world = new RevolutionWorld();
+        world.GetComponentA(default);
     }
 }

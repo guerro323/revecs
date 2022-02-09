@@ -2,16 +2,36 @@ namespace revecs.Extensions.Generator.Components;
 
 public interface ISparseComponent : IRevolutionComponent
 {
-    public const string Imports = "using revecs.Core.Components;\nusing revecs.Extensions.Generator;";
- 
+    public const string Imports = @"using revecs.Core.Components;
+using revecs.Extensions.Generator;";
+
+    public const string External = @"
+    public static class [Type]Extensions
+    {
+        public static ref [TypeAddr] Add[Type](this RevolutionWorld world, UEntityHandle entity) {
+            return ref world.GetComponentData(entity, [TypeAddr].Type.GetOrCreate(world));
+        } 
+
+        public static ref [TypeAddr] Remove[Type](this RevolutionWorld world, UEntityHandle entity) {
+            return ref world.GetComponentData(entity, [TypeAddr].Type.GetOrCreate(world));
+        } 
+
+        public static ref [TypeAddr] Get[Type](this RevolutionWorld world, UEntityHandle entity) {
+            return ref world.GetComponentData(entity, [TypeAddr].Type.GetOrCreate(world));
+        } 
+    }
+";
+    
     // The accessors are kinda useless on this type (since the calls would be the same without them)
     // But they serve as a helper for future component types (such as buffer which need custom accessors)
     public const string Body = @"
+        public static ComponentType ToComponentType(RevolutionWorld world) => Type.GetOrCreate(world);
+
         public static class Type
         {
             public static ComponentType<[TypeAddr]> GetOrCreate(RevolutionWorld world)
             {
-                var existing = world.GetComponentType(ManagedTypeData<[TypeAddr]>.Name);
+                var existing = world.GetComponentType(typeof(TypeAddr).RuntimeTypeHandle, ManagedTypeData<[TypeAddr]>.Name);
                 if (existing.Equals(default))
                     existing = world.RegisterComponent<SparseComponentSetup<[TypeAddr]>>();
 

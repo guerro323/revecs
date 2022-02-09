@@ -211,7 +211,7 @@ namespace revecs
         }
     }
 
-    record Constants(string? Body, string? Imports);
+    record Constants(string? Body, string? Imports, string? External);
 
     public void GenerateComponent(ComponentSource source)
     {
@@ -222,7 +222,7 @@ namespace revecs
         {
             void FindInterface(INamedTypeSymbol symbol)
             {
-                var constant = new Constants(null, null);
+                var constant = new Constants(null, null, null);
                 foreach (var member in symbol.GetMembers())
                 {
                     Log(2, member.Name + " : " + member.GetType());
@@ -236,6 +236,7 @@ namespace revecs
                         {
                             "Imports" => constant with {Imports = fieldSymbol.ConstantValue.ToString()},
                             "Body" => constant with {Body = fieldSymbol.ConstantValue.ToString()},
+                            "External" => constant with {External = fieldSymbol.ConstantValue.ToString()},
                             _ => constant
                         };
                     }
@@ -330,17 +331,17 @@ using revtask.Helpers;
         {
             sb.AppendLine("    }");
         }
+        
+        var typeAddr = string.Empty;
+        if (source.Parent != null)
+            typeAddr = $"{source.Parent.GetTypeName()}.";
+        else if (source.Namespace != null)
+            typeAddr = $"global::{source.Namespace}.";
+
+        typeAddr += source.Name;
 
         void Body()
         {
-            var typeAddr = string.Empty;
-            if (source.Parent != null)
-                typeAddr = $"{source.Parent.GetTypeName()}.";
-            else if (source.Namespace != null)
-                typeAddr = $"global::{source.Namespace}.";
-
-            typeAddr += source.Name;
-
             var expr = new StringBuilder();
             foreach (var (name, obj) in map)
             {
@@ -349,6 +350,24 @@ using revtask.Helpers;
 
                 expr.AppendLine($"        // {name}");
                 expr.AppendLine(body
+                    .Replace("[Type]", source.Name)
+                    .Replace("[TypeAddr]", typeAddr)
+                );
+            }
+
+            sb.AppendLine(expr.ToString());
+        }
+
+        void External()
+        {
+            var expr = new StringBuilder();
+            foreach (var (name, obj) in map)
+            {
+                if (obj.External is not { } ext)
+                    continue;
+
+                expr.AppendLine($"    // {name}");
+                expr.AppendLine(ext
                     .Replace("[Type]", source.Name)
                     .Replace("[TypeAddr]", typeAddr)
                 );
@@ -370,6 +389,8 @@ using revtask.Helpers;
                 EndComponent();
             }
             EndParentTypes();
+
+            External();
         }
         EndNamespace();
 

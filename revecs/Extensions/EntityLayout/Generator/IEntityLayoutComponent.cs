@@ -8,6 +8,8 @@ public interface IEntityLayoutComponent : IRevolutionComponent
     void GetComponentTypes(RevolutionWorld world, List<ComponentType> componentTypes);
     
     private const string Type = @"
+        public static ComponentType ToComponentType(RevolutionWorld world) => Type.GetOrCreate(world);
+
         public static class Type
         {
             public static ComponentType<[TypeAddr]> GetOrCreate(RevolutionWorld world)

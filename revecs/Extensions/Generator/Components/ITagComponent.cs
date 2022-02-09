@@ -3,10 +3,25 @@ namespace revecs.Extensions.Generator.Components;
 public interface ITagComponent : IRevolutionComponent
 {
     public const string Imports = "using revecs.Core.Components.Boards;\nusing revecs.Extensions.Generator;\nusing revecs.Core.Components;";
+    
+    public const string External = @"
+    public static class [Type]Extensions
+    {
+        public static ref [TypeAddr] Add[Type](this RevolutionWorld world, UEntityHandle entity) {
+            return ref world.GetComponentData(entity, [TypeAddr].Type.GetOrCreate(world));
+        } 
+
+        public static ref [TypeAddr] Remove[Type](this RevolutionWorld world, UEntityHandle entity) {
+            return ref world.GetComponentData(entity, [TypeAddr].Type.GetOrCreate(world));
+        } 
+    }
+";
  
     // The accessors are kinda useless on this type (since the calls would be the same without them)
     // But they serve as a helper for future component types (such as buffer which need custom accessors)
     private const string Type = @"
+        public static ComponentType ToComponentType(RevolutionWorld world) => Type.GetOrCreate(world);
+
         public static class Type
         {
             public static ComponentType<[TypeAddr]> GetOrCreate(RevolutionWorld world)

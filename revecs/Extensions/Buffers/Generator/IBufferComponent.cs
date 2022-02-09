@@ -9,6 +9,8 @@ public interface IBufferComponent : IRevolutionComponent
     // The accessors are kinda useless on this type (since the calls would be the same without them)
     // But they serve as a helper for future component types (such as buffer which need custom accessors)
     public const string Body = @"
+        public static ComponentType ToComponentType(RevolutionWorld world) => Type.GetOrCreate(world);
+
         public static class Type
         {
             public static ComponentType<[TypeAddr]> GetOrCreate(RevolutionWorld world)
