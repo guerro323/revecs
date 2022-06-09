@@ -89,9 +89,9 @@ public class ArchetypeQuery : IDisposable
     /// <summary>
     ///     Get the entities from valid archetypes, with an option to swapback entities
     /// </summary>
-    public ArchetypeQueryEnumerator GetEnumerator()
+    public ArchetypeQueryEnumerator GetEnumerator(bool update = true)
     {
-        update();
+        if (update) this.update();
         
         return new ArchetypeQueryEnumerator
         {
