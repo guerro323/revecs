@@ -387,9 +387,25 @@ using System.ComponentModel;
                         $"{accessor.GetInit($"Accessor{arg.Symbol.Name}", $"self.{arg.Symbol.Name}Type", "_world")}"
                     );
                     
-                    iterationInit.Append($@"
+                    var accessPerm = arg.Custom.DisableReferenceWrapper
+                        ? string.Empty
+                        : "ref";
+
+                    var access =
+                        $"{accessor.GetAccess($"Accessor{arg.Symbol.Name}", "iter.Handle", accessPerm)}";
+
+                    if (!arg.Custom.DisableReferenceWrapper)
+                    {
+                        iterationInit.Append($@"
+                    iter.Accessor{arg.Symbol.Name} = Unsafe.AsPointer({access});
+");
+                    }
+                    else
+                    {
+                        iterationInit.Append($@"
                     iter.Accessor{arg.Symbol.Name} = Accessor{arg.Symbol.Name};
 ");
+                    }
                 }
                 else
                 {
@@ -401,17 +417,20 @@ using System.ComponentModel;
                     accessorInit.Append("                ");
                     accessorInit.AppendLine(
                         $"Accessor{arg.Symbol.Name} = _world.AccessEntityComponent(self.{arg.Symbol.Name}Type); ");
+                    
+                    var accessPerm = arg.Custom.DisableReferenceWrapper
+                        ? string.Empty
+                        : "ref";
 
                     iterationInit.Append("                    ");
                     iterationInit.AppendLine(
-                        $"iter.Accessor{arg.Symbol.Name} = Accessor{arg.Symbol.Name}; ");
+                        $"iter.Accessor{arg.Symbol.Name} = Unsafe.AsPointer(ref Accessor{arg.Symbol.Name}[iter.Handle]); ");
                 }
             }
 
             sb.Append($@"
-        public ref struct Enumerator
+        public unsafe ref struct Enumerator
         {{
-            private RevolutionWorld _world;
             private ArchetypeQueryEnumerator _enumerator;
 
 {accessorFields}
@@ -432,7 +451,7 @@ using System.ComponentModel;
             {{
                 this = default;
 
-                _world = self.Query.World;
+                var _world = self.Query.World;
                 _enumerator = self.Query.GetEnumerator();
 
 {accessorInit}
@@ -446,7 +465,7 @@ using System.ComponentModel;
         }}
 ");
             var iteration = new StringBuilder(@"
-        public ref struct Iteration
+        public unsafe ref struct Iteration
         {
 ");
             var iterationFields = new StringBuilder("            public UEntityHandle Handle;\n");
@@ -475,6 +494,12 @@ using System.ComponentModel;
                 var access = arg.Custom is {ViaAccessor: { } accessor}
                     ? $"{accessor.GetAccess($"Accessor{arg.Symbol.Name}", "Handle", accessPerm)};"
                     : $"{accessPerm} Accessor{arg.Symbol.Name}[handle];";
+
+                if (!arg.Custom.DisableReferenceWrapper)
+                {
+                    accessorTypeName = "void*";
+                    access = $"{accessPerm} Unsafe.AsRef<{typeName}>(Accessor{arg.Symbol.Name});";
+                }
 
                 iterationFields.AppendLine($"            [EditorBrowsable(EditorBrowsableState.Never)] public {accessorTypeName} Accessor{arg.Symbol.Name};\n" +
                                            $"            public {perm} {typeName} {arg.PublicName} => {access}\n");

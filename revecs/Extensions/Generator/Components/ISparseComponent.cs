@@ -8,6 +8,10 @@ using revecs.Extensions.Generator;";
     public const string External = @"
     public static class [Type]Extensions
     {
+        public static bool Has[Type](this RevolutionWorld world, UEntityHandle entity) {
+            return world.HasComponent(entity, [TypeAddr].Type.GetOrCreate(world));
+        }
+
         public static void Add[Type](this RevolutionWorld world, UEntityHandle entity, [TypeAddr] data = default) {
             world.AddComponent(entity, [TypeAddr].Type.GetOrCreate(world), data);
         } 
