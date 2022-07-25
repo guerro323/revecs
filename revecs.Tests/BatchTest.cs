@@ -1,3 +1,4 @@
+using revecs.Core;
 using revtask.Core;
 using revtask.Helpers;
 using revtask.OpportunistJobRunner;
@@ -6,7 +7,7 @@ using Xunit.Abstractions;
 
 namespace revecs.Tests;
 
-public class BatchTest : TestBase
+public partial class BatchTest : TestBase
 {
     struct EmptyJob : IJob
     {
@@ -81,6 +82,54 @@ public class BatchTest : TestBase
     }
 
     public BatchTest(ITestOutputHelper output) : base(output)
+    {
+    }
+
+    [Fact]
+    public void TestQuery()
+    {
+        using var runner = new OpportunistJobRunner(0.5f);
+        using var world = new RevolutionWorld();
+
+        const int count = 100;
+        for (var i = 0; i < count; i++)
+        {
+            var ent = world.CreateEntity();
+            world.AddComponentA(ent, new ComponentA {Value = i});
+            world.AddComponentB(ent, new ComponentB {Value = i + 100});
+        }
+        
+        world.ArchetypeUpdateBoard.Update();
+
+        var query = new MyQuery(world);
+        var hashsetA = new HashSet<int>();
+        var hashsetB = new HashSet<int>();
+        query.QueueAndComplete(runner, (_, entities) =>
+        {
+            foreach (var ent in entities)
+            {
+                output.WriteLine($"{ent.Handle} {ent.a.Value} {ent.b.Value}");
+                lock (this)
+                {
+                    Assert.False(hashsetA.Contains(ent.a.Value), "hashsetA.Contains(ent.a.Value)");
+                    Assert.False(hashsetB.Contains(ent.b.Value), "hashsetB.Contains(ent.b.Value)");
+                    
+                    hashsetA.Add(ent.a.Value);
+                    hashsetB.Add(ent.b.Value);
+                }
+            }
+        });
+
+        for (var i = 0; i < count; i++)
+        {
+            Assert.Contains(i, hashsetA);
+            Assert.Contains(i + 100, hashsetB);
+        }
+        
+        output.WriteLine("ok?");
+    }
+
+    public partial struct MyQuery : IQuery<(Read<ComponentA> a, Read<ComponentB> b)>
     {
     }
 }

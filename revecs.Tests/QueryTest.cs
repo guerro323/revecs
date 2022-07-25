@@ -160,35 +160,4 @@ public class QueryTest : TestBase
             output.WriteLine("  "); 
         }
     }
-
-    [StructLayout(LayoutKind.Explicit)]
-    public unsafe ref struct Enumerator
-    {
-        [FieldOffset(0)]
-        private byte padding;
-        
-        public bool MoveNext()
-        {
-            var ok = new SparseSetAccessor<int>();
-            throw new NotImplementedException();
-        }
-
-        public void Dispose()
-        {
-            
-        }
-
-        public ref readonly Enumerator Current
-        {
-            get
-            {
-                return ref *(Enumerator*) AsRef(ref this);
-            }
-        }
-        
-        public static void* AsRef(ref Enumerator yes)
-        {
-            return Unsafe.AsPointer(ref yes.padding);
-        }
-    }
 }

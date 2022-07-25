@@ -35,7 +35,8 @@ public record QuerySource
     string? StructureName = null,
     // system usage
     string? ValidStructureName = null,
-    bool AlreadyGenerated = false
+    bool AlreadyGenerated = false,
+    bool IsUserDefined = false
 )
 {
     public string GetDisplayName() => ValidStructureName ?? Name;
@@ -79,7 +80,7 @@ using System;
 using System.Runtime.CompilerServices;
 namespace revecs
 {{
-    internal interface IQuery<T> {{ }}
+    internal interface IQuery<T> : global::revecs.Extensions.Generator.IRevolutionQuery {{ }}
 
     internal interface Write<T> {{ }}
 
@@ -197,7 +198,12 @@ using System.ComponentModel;
             sb.Append("    ");
             if (structName.StartsWith("__"))
                 sb.Append("[EditorBrowsable(EditorBrowsableState.Never)]");
-            sb.AppendFormat("partial {1} struct {0}\n    {{\n", structName, source.IsRecord ? "record" : string.Empty);
+            sb.AppendFormat("partial {1} struct {0}{2}\n    {{\n", 
+                structName, 
+                source.IsRecord ? "record" : string.Empty,
+                source.IsUserDefined ? string.Empty : ": global::revecs.Extensions.Generator.IRevolutionQuery");
+            
+            
         }
 
         void EndStruct()
@@ -208,6 +214,7 @@ using System.ComponentModel;
         void Fields()
         {
             sb.AppendLine("        public readonly ArchetypeQuery Query;");
+            sb.AppendLine("        ArchetypeQuery global::revecs.Extensions.Generator.IRevolutionQuery.Query => this.Query;");
             sb.AppendLine("        public readonly SwapDependency EntityDependency;");
             sb.AppendLine("        public readonly SwapDependency WorldDependency;");
 
@@ -357,11 +364,23 @@ using System.ComponentModel;
 ");
         }
         
-        void ImplementForeach()
+        void ImplementForeach(string type)
         {
+            var isArchetype = type == "archetype";
+            var isEntity = type == "entity";
+
+            var args = isArchetype 
+                ? string.Empty
+                : "ReadOnlySpan<UEntityHandle> span";
+            
             sb.Append($@"
         
-        public Enumerator GetEnumerator() => new(this);
+        public Enumerator{(isEntity ? "Slice" : string.Empty)} GetEnumerator{(isEntity ? "Slice" : string.Empty)}({args}) => new(this) {{
+            _enumerator = {isEntity switch {
+                true => "span.GetEnumerator()",
+                false => "Query.GetEnumerator()"
+            }}
+        }};
 ");
 
             var iterationInit = new StringBuilder();
@@ -429,9 +448,9 @@ using System.ComponentModel;
             }
 
             sb.Append($@"
-        public unsafe ref struct Enumerator
+        public unsafe ref struct Enumerator{(isEntity ? "Slice" : string.Empty)}
         {{
-            private ArchetypeQueryEnumerator _enumerator;
+            public {(isEntity ? "ReadOnlySpan<UEntityHandle>.Enumerator" : "ArchetypeQueryEnumerator")} _enumerator;
 
 {accessorFields}
 
@@ -447,12 +466,11 @@ using System.ComponentModel;
                 }}
             }}
 
-            public Enumerator({source.StructureName ?? source.Name} self)
+            public Enumerator{(isEntity ? "Slice" : string.Empty)}({source.StructureName ?? source.Name} self)
             {{
                 this = default;
 
                 var _world = self.Query.World;
-                _enumerator = self.Query.GetEnumerator();
 
 {accessorInit}
             }}
@@ -462,8 +480,14 @@ using System.ComponentModel;
             {{
                 return _enumerator.MoveNext();
             }}
+
+            public Enumerator{(isEntity ? "Slice" : string.Empty)} GetEnumerator() => this;
         }}
 ");
+
+            if (isEntity)
+                return;
+            
             var iteration = new StringBuilder(@"
         public unsafe ref struct Iteration
         {
@@ -535,6 +559,38 @@ using System.ComponentModel;
             enumerator.MoveNext();
             return enumerator.Current;
         }}
+
+        public delegate void OnEntities<_T>(global::revecs.Systems.SystemState<_T> state, EnumeratorSlice entities);
+
+        void global::revecs.Extensions.Generator.IRevolutionQuery.ParallelOnEntities<_T>(ReadOnlySpan<UEntityHandle> span, global::revecs.Systems.SystemState<_T> state, object action)
+        {{
+            var ac = (OnEntities<_T>) action;
+            var enumerator = GetEnumeratorSlice(span);
+            ac(state, enumerator);
+        }}
+
+        public global::revecs.Extensions.Generator.RevolutionQueryJob<{source.StructureName ?? source.Name}, _T> Job<_T>(OnEntities<_T> action, _T data, bool singleThreaded = false) {{
+            var job = new global::revecs.Extensions.Generator.RevolutionQueryJob<{source.StructureName ?? source.Name}, _T>(this, action, singleThreaded);
+            job.PrepareData(data);
+
+            return job;
+        }}
+
+        public JobRequest Queue<_T>(IJobRunner runner, OnEntities<_T> action, _T data, bool singleThreaded = false) {{
+            return runner.Queue(Job<_T>(action, data, singleThreaded));
+        }}
+
+        public JobRequest Queue(IJobRunner runner, OnEntities<ValueTuple> action, bool singleThreaded = false) {{
+            return runner.Queue(Job(action, default(ValueTuple), singleThreaded));
+        }}
+
+        public void QueueAndComplete<_T>(IJobRunner runner, OnEntities<_T> action, _T data, bool singleThreaded = false) {{
+            runner.QueueAndComplete(Job<_T>(action, data, singleThreaded));
+        }}
+
+        public void QueueAndComplete(IJobRunner runner, OnEntities<ValueTuple> action, bool singleThreaded = false) {{
+            runner.QueueAndComplete(Job(action, default(ValueTuple), singleThreaded));
+        }}
 ");
         }
 
@@ -553,7 +609,8 @@ using System.ComponentModel;
                     }
                     else
                     {
-                        ImplementForeach();
+                        ImplementForeach("archetype");
+                        ImplementForeach("entity");
                     }
 
                     Dependency();
@@ -683,7 +740,8 @@ using System.ComponentModel;
                         symbol.Name,
                         tree.FilePath,
                         header,
-                        IsRecord: symbol.IsRecord
+                        IsRecord: symbol.IsRecord,
+                        IsUserDefined: true
                     );
                     
                     GenerateQuery(source);
