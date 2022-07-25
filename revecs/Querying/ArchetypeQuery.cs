@@ -84,14 +84,14 @@ public class ArchetypeQuery : IDisposable
     }
 
     // TODO: There should be a way to only update entities that can match this query
-    private void update() => World.ArchetypeUpdateBoard.Update();
+    public void Update() => World.ArchetypeUpdateBoard.Update();
     
     /// <summary>
     ///     Get the entities from valid archetypes, with an option to swapback entities
     /// </summary>
     public ArchetypeQueryEnumerator GetEnumerator(bool update = true)
     {
-        if (update) this.update();
+        if (update) Update();
         
         return new ArchetypeQueryEnumerator
         {
@@ -112,8 +112,6 @@ public class ArchetypeQuery : IDisposable
     // we need to make sure that the user know to not call this method at each iteration of a loop (eg: `for (i = 0; i < GetEntityCount(); i++)`)
     public int GetEntityCount()
     {
-        update();
-        
         // Maybe use ArchetypeUpdateBoard.PreSwitchEvent to calculate the entity count?
         
         var count = 0;
@@ -126,7 +124,6 @@ public class ArchetypeQuery : IDisposable
 
     public bool Any()
     {
-        update();
         foreach (var arch in CollectionsMarshal.AsSpan(_matchedArchetypes))
             if (!World.ArchetypeBoard.GetEntities(arch).IsEmpty)
                 return true;
@@ -143,8 +140,6 @@ public class ArchetypeQuery : IDisposable
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public UEntityHandle EntityAt(int index)
     {
-        update();
-        
         if (index < 0)
             throw new IndexOutOfRangeException("Index is negative");
 
@@ -172,8 +167,6 @@ public class ArchetypeQuery : IDisposable
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool EntitySliceAt(ref int start, ref int count, out Span<UEntityHandle> outSpan)
     {
-        update();
-        
         if (count == 0)
         {
             outSpan = Span<UEntityHandle>.Empty;
