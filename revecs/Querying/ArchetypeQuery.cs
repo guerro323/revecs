@@ -102,6 +102,11 @@ public class ArchetypeQuery : IDisposable
         };
     }
 
+    public ArchetypeQueryEnumerator GetEnumerator()
+    {
+        return GetEnumerator(true);
+    }
+
     public Span<UArchetypeHandle> GetMatchedArchetypes() => CollectionsMarshal.AsSpan(_matchedArchetypes);
 
     // we need to make sure that the user know to not call this method at each iteration of a loop (eg: `for (i = 0; i < GetEntityCount(); i++)`)
