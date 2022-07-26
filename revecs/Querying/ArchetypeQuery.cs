@@ -110,8 +110,10 @@ public class ArchetypeQuery : IDisposable
     public Span<UArchetypeHandle> GetMatchedArchetypes() => CollectionsMarshal.AsSpan(_matchedArchetypes);
 
     // we need to make sure that the user know to not call this method at each iteration of a loop (eg: `for (i = 0; i < GetEntityCount(); i++)`)
-    public int GetEntityCount()
+    public int GetEntityCount(bool update = true)
     {
+        if (update) Update();
+        
         // Maybe use ArchetypeUpdateBoard.PreSwitchEvent to calculate the entity count?
         
         var count = 0;
@@ -122,8 +124,10 @@ public class ArchetypeQuery : IDisposable
         return count;
     }
 
-    public bool Any()
+    public bool Any(bool update = true)
     {
+        if (update) Update();
+    
         foreach (var arch in CollectionsMarshal.AsSpan(_matchedArchetypes))
             if (!World.ArchetypeBoard.GetEntities(arch).IsEmpty)
                 return true;
