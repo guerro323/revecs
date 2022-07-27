@@ -15,7 +15,8 @@ public record CommandSource
     string? StructureName = null,
     // system usage
     string? ValidStructureName = null,
-    bool AlreadyGenerated = false
+    bool AlreadyGenerated = false,
+    bool IsUserDefined = false
 )
 {
     public string GetDisplayName() => ValidStructureName ?? Name;
@@ -184,14 +185,15 @@ using revtask.Helpers;
             if (structName.StartsWith("__"))
                 sb.Append("    [EditorBrowsable(EditorBrowsableState.Never)]");
 
-            if (interfaces.Any())
+            var recordMb = source.IsRecord ? "record" : string.Empty;
+            if (interfaces.Any() && !source.IsUserDefined)
                 sb.AppendLine(
-                    $"    partial struct {structName} :\n{string.Join(",\n            ", interfaces)}\n    {{"
+                    $"    partial {recordMb} struct {structName} :\n{string.Join(",\n            ", interfaces)}\n    {{"
                 );
             else
             {
                 sb.AppendLine(
-                    $"    partial struct {structName}\n    {{"
+                    $"    partial {recordMb} struct {structName}\n    {{"
                 );
             }
         }
@@ -370,7 +372,8 @@ using revtask.Helpers;
                         {
                             return (INamedTypeSymbol) t;
                         }).ToArray(),
-                        IsRecord: symbol.IsRecord
+                        IsRecord: symbol.IsRecord,
+                        IsUserDefined: true
                     );
                     
                     GenerateCommand(source);
