@@ -74,6 +74,9 @@ public class QueryGenerator
 
     public void GenerateHelpers()
     {
+        // Helpers are now integrated
+        return;
+    
         var helpersSource =
             $@"
 using System;
