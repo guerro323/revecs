@@ -5,7 +5,28 @@ namespace revecs.Extensions.Buffers;
 public interface IBufferComponent : IRevolutionComponent
 {
     public const string Imports = "using revecs.Core.Components.Boards;\nusing revecs.Extensions.Generator;\nusing revecs.Extensions.Buffers;";
- 
+
+    public const string External = @"
+    public static class [Type]Extensions
+    {
+        public static bool Has[Type](this RevolutionWorld world, UEntityHandle entity) {
+            return world.HasComponent(entity, [TypeAddr].Type.GetOrCreate(world));
+        }
+
+        public static void Add[Type](this RevolutionWorld world, UEntityHandle entity, ReadOnlySpan<[TypeAddr]> span) {
+            world.AddComponent(entity, [TypeAddr].Type.GetOrCreate(world), span);
+        } 
+
+        public static bool Remove[Type](this RevolutionWorld world, UEntityHandle entity) {
+            return world.RemoveComponent(entity, [TypeAddr].Type.GetOrCreate(world));
+        } 
+
+        public static Span<[TypeAddr]> Get[Type](this RevolutionWorld world, UEntityHandle entity) {
+            return world.ReadComponent(entity, [TypeAddr].Type.GetOrCreate(world));
+        } 
+    }
+";
+    
     // The accessors are kinda useless on this type (since the calls would be the same without them)
     // But they serve as a helper for future component types (such as buffer which need custom accessors)
     public const string Body = @"

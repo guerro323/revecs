@@ -1,3 +1,5 @@
+using revecs.Core;
+using revecs.Extensions.Buffers;
 using revecs.Extensions.RelativeEntity.Generator;
 using revecs.Systems.Generator;
 using Xunit.Abstractions;

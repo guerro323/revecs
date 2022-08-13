@@ -130,7 +130,47 @@ public const string WorldAccess_ValueType = ""ReadOnlySpan<UEntityHandle>"";
             }
         }
 ";
-    
+        
+    public const string External = @"
+    public static class [Type]Extensions
+    {
+        public static bool Has[Type](this RevolutionWorld world, UEntityHandle entity) {
+            return world.HasComponent(entity, [TypeAddr].Type.GetOrCreate(world));
+        }
+
+        public static void Add[Type](this RevolutionWorld world, UEntityHandle entity) {
+            world.AddComponent(entity, [TypeAddr].Type.GetOrCreate(world), default);
+        } 
+
+        public static bool Remove[Type](this RevolutionWorld world, UEntityHandle entity) {
+            return world.RemoveComponent(entity, [TypeAddr].Type.GetOrCreate(world));
+        } 
+
+        public static Span<UEntityHandle> Get[Type](this RevolutionWorld world, UEntityHandle entity) {
+            return world.ReadComponent(entity, [TypeAddr].Type.GetOrCreate(world));
+        } 
+    }
+
+    public static class [Type]RelativeExtensions
+    {
+        public static bool Has[Type]Relative(this RevolutionWorld world, UEntityHandle entity) {
+            return world.HasComponent(entity, [TypeAddr].Relative.Type.GetOrCreate(world));
+        }
+
+        public static void Add[Type]Relative(this RevolutionWorld world, UEntityHandle entity, UEntityHandle target) {
+            world.AddComponent(entity, [TypeAddr].Relative.Type.GetOrCreate(world), target);
+        } 
+
+        public static bool Remove[Type]Relative(this RevolutionWorld world, UEntityHandle entity) {
+            return world.RemoveComponent(entity, [TypeAddr].Relative.Type.GetOrCreate(world));
+        } 
+
+        public static UEntityHandle Get[Type]Relative(this RevolutionWorld world, UEntityHandle entity) {
+            return world.GetComponentData(entity, [TypeAddr].Relative.Type.GetOrCreate(world));
+        } 
+    }
+";
+
     private const string Commands = @"
         public static class __Internals
         {
