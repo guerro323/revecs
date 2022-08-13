@@ -20,7 +20,7 @@ public interface IDescriptionComponent : IRevolutionComponent
 
 public const string AccessorAccess_FieldType = ""EntityComponentAccessor<UEntityHandle>"";
 public const string AccessorAccess_Init = ""[field] = [world].AccessEntityComponent([componentType].UnsafeCast<UEntityHandle>());"";
-public const string AccessorAccess_Access = ""[access] [field].FirstOrThrow([entity])"";
+public const string AccessorAccess_Access = ""[access] [field][entity][0]"";
 public const string AccessorAccess_ValueType = ""UEntityHandle"";
 
 public const string WorldAccess_Access = ""[value] = [access] [world].GetComponentData([entity], [componentType].UnsafeCast<UEntityHandle>())"";
