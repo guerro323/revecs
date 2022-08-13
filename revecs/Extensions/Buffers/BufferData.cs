@@ -44,7 +44,7 @@ public partial struct BufferData<T> : IList<T>, IReadOnlyList<T>
         Add(Unsafe.As<TToReinterpret, T>(ref value));
     }
 
-    public void AddRange(Span<T> span)
+    public void AddRange(ReadOnlySpan<T> span)
     {
         backing.AddRange(MemoryMarshal.AsBytes(span));
     }

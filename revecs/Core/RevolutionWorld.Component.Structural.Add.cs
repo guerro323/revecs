@@ -26,7 +26,7 @@ namespace revecs.Core
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void AddComponent<T>(UEntityHandle entityHandle, ComponentType componentType,
-            Span<T> data = default)
+            ReadOnlySpan<T> data = default)
         {
             BoardSupportTypeThrow<T>(componentType);
 
@@ -39,11 +39,11 @@ namespace revecs.Core
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void AddComponent<T>(UEntityHandle entityHandle, ComponentType componentType,
             in T data = default)
-            => AddComponent(entityHandle, componentType, MemoryMarshal.CreateSpan(ref Unsafe.AsRef(data), 1));
+            => AddComponent(entityHandle, componentType, MemoryMarshal.CreateReadOnlySpan(ref Unsafe.AsRef(data), 1));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void AddComponent<T>(UEntityHandle entityHandle, ComponentType<T> componentType,
-            Span<T> data = default)
+            ReadOnlySpan<T> data = default)
         {
             AddComponent(entityHandle, componentType, MemoryMarshal.CreateSpan(
                 ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(data)),
