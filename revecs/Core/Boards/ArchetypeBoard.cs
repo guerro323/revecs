@@ -119,11 +119,12 @@ namespace revecs.Core.Boards
         public void AddEntity(UArchetypeHandle row, UEntityHandle entity)
         {
             // thread-safe
-            using var sync = column.sync[row.Id].Synchronize();
+            // using var sync = column.sync[row.Id].Synchronize();
             
             var list = column.entity[row.Id];
+            list.Add(entity);
 
-            ref var listRef = ref MemoryMarshal.GetReference(CollectionsMarshal.AsSpan(list));
+            /*ref var listRef = ref MemoryMarshal.GetReference(CollectionsMarshal.AsSpan(list));
             var count = list.Count;
 
             var lastEntity = default(UEntityHandle);
@@ -143,7 +144,7 @@ namespace revecs.Core.Boards
                 }
             }
 
-            list.Insert(nearest, entity);
+            list.Insert(nearest, entity);*/
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

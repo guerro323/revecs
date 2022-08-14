@@ -1,4 +1,5 @@
 using revecs.Core;
+using revecs.Core.Boards;
 using revtask.Core;
 using revtask.Helpers;
 using revtask.OpportunistJobRunner;
@@ -90,6 +91,7 @@ public partial class BatchTest : TestBase
     {
         using var runner = new OpportunistJobRunner(0.5f);
         using var world = new RevolutionWorld();
+        world.AddBoard(nameof(BatchRunnerBoard), new BatchRunnerBoard(runner, world));
 
         const int count = 100;
         for (var i = 0; i < count; i++)

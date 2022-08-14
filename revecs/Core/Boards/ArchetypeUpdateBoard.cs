@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using revecs.Utility;
 using revghost.Shared.Events;
 using revghost.Shared.Threading;
+using revtask.Core;
 
 namespace revecs.Core.Boards
 {
@@ -41,6 +42,17 @@ namespace revecs.Core.Boards
 
             _entityOnResizeListener = _entityBoard.CurrentSize.Subscribe(EntityOnResize, true);
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void removeEntity(in UEntityHandle handle)
+        {
+            ref var index = ref _column.queueIndex[handle.Id];
+            _column.update[index] = default;
+
+            index = -1;
+
+            _updateCount--;
+        }
         
 #if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -54,13 +66,45 @@ namespace revecs.Core.Boards
                 _hasComponentBoard,
                 handle
             );
+            
+            removeEntity(handle);
+        }
 
-            ref var index = ref _column.queueIndex[handle.Id];
-            _column.update[index] = default;
+        record struct UpdateArchetypesJob(ArchetypeUpdateBoard Self) : IJob
+        {
+            private int _entityCount;
+            
+            private static int GetEntityToProcess(int entityCount, int taskCount)
+            {
+                return Math.Max((int)Math.Ceiling((float) entityCount / taskCount), 1);
+            }
+            
+            public int SetupJob(JobSetupInfo info)
+            {
+                var count = _entityCount = Self._updateCount;
+                return Math.Max((int) Math.Ceiling((float) count / GetEntityToProcess(count, info.TaskCount)), 1);
+            }
 
-            index = -1;
+            public void Execute(IJobRunner runner, JobExecuteInfo info)
+            {
+                var entityToProcess = GetEntityToProcess(_entityCount, info.TaskCount);
 
-            _updateCount--;
+                var batchSize = info.Index == info.MaxUseIndex
+                    ? _entityCount - (entityToProcess * info.Index)
+                    : entityToProcess;
+
+                var start = entityToProcess * info.Index;
+                var end = Math.Min(_entityCount, start + batchSize);
+
+                for (; start < end; start++)
+                {
+                    var handle = Self._column.update[start];
+                    if (handle.Id == default)
+                        continue;
+
+                    Self.updateArchetype(handle);
+                }
+            }
         }
 
 #if !DEBUG
@@ -68,16 +112,27 @@ namespace revecs.Core.Boards
 #endif
         public void Update()
         {
+            if (_updateCount == 0)
+                return;
+            
             using var sync = _synchronization.Synchronize();
             var span = _column.update.AsSpan(0, _updateCount);
             foreach (ref readonly var ev in CollectionsMarshal.AsSpan(_preSwitchList))
                 ev(span);
-
-            var count = _updateCount;
-            for (var i = 0; i < count; i++)
+            
+            var runnerBoard = World.GetBoardOrDefault<BatchRunnerBoard>(nameof(BatchRunnerBoard));
+            if (runnerBoard != null)
             {
-                var entity = _column.update[i];
-                if (entity.Id != 0) updateArchetype(entity);
+                runnerBoard.Runner.QueueAndComplete(new UpdateArchetypesJob(this));
+            }
+            else
+            {
+                var count = _updateCount;
+                for (var i = 0; i < count; i++)
+                {
+                    var entity = _column.update[i];
+                    if (entity.Id != 0) updateArchetype(entity);
+                }
             }
         }
 
