@@ -28,7 +28,7 @@ public class LinkedChildEntityBoard : ComponentBoardBase
 
     public override void RemoveComponent(UEntityHandle entity)
     {
-        if (!HasComponentBoard.SetAndGetOld(ComponentType, entity, true))
+        if (!HasComponentBoard.SetAndGetOld(ComponentType, entity, false))
             return;
         
         var parents = _mainBoard.column.parents[entity.Id].Span;

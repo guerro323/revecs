@@ -71,7 +71,7 @@ public class LayoutComponentBoard : ComponentBoardBase
             World.RemoveComponent(entity, ComponentTypes[comp]);
         }
 
-        if (HasComponentBoard.SetAndGetOld(ComponentType, entity, true))
+        if (HasComponentBoard.SetAndGetOld(ComponentType, entity, false))
         {
             World.ArchetypeUpdateBoard.Queue(entity);
         }

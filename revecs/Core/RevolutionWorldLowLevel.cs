@@ -33,7 +33,9 @@ namespace revecs.Core
             {
                 var metadataSpan = hasComponentBoard.GetColumn(typeSpan[i]);
                 if (metadataSpan[entityHandle.Id])
+                {
                     founds[foundIndex++] = typeSpan[i];
+                }
             }
 
             if (foundIndex > 150)

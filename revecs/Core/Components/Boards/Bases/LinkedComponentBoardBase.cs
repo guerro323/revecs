@@ -77,7 +77,7 @@ namespace revecs.Core.Components.Boards.Bases
                 DestroyComponent(index);
                 World.ArchetypeUpdateBoard.Queue(handle);
                 
-                HasComponentBoard.EntityHasComponentColumn[ComponentByteSize][handle.Id] = false;
+                HasComponentBoard.EntityHasComponentColumn[ComponentType.Handle][handle.Id] = false;
 
                 var cpy = index;
                 index = default;
