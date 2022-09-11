@@ -13,7 +13,7 @@ public interface IBufferComponent : IRevolutionComponent
             return world.HasComponent(entity, [TypeAddr].Type.GetOrCreate(world));
         }
 
-        public static void Add[Type](this RevolutionWorld world, UEntityHandle entity, ReadOnlySpan<[TypeAddr]> span) {
+        public static void Add[Type](this RevolutionWorld world, UEntityHandle entity, global::System.ReadOnlySpan<[TypeAddr]> span) {
             world.AddComponent(entity, [TypeAddr].Type.GetOrCreate(world), span);
         } 
 
@@ -21,7 +21,7 @@ public interface IBufferComponent : IRevolutionComponent
             return world.RemoveComponent(entity, [TypeAddr].Type.GetOrCreate(world));
         } 
 
-        public static Span<[TypeAddr]> Get[Type](this RevolutionWorld world, UEntityHandle entity) {
+        public static global::System.Span<[TypeAddr]> Get[Type](this RevolutionWorld world, UEntityHandle entity) {
             return world.ReadComponent(entity, [TypeAddr].Type.GetOrCreate(world));
         } 
     }
@@ -118,7 +118,7 @@ public interface IBufferComponent : IRevolutionComponent
             public interface IAdmin : IRevolutionCommand, IWrite, IRead
             {
                 public const string Body = @""
-        public void Add[Type](in UEntityHandle handle, in Span<[TypeAddr]> data = default)
+        public void Add[Type](in UEntityHandle handle, in global::System.ReadOnlySpan<[TypeAddr]> data = default)
         {
             World.AddComponent(handle, [Type]Type, data);
         }
@@ -129,7 +129,7 @@ public interface IBufferComponent : IRevolutionComponent
         }
 "";
 
-                void Add[Type](in UEntityHandle handle, in Span<[TypeAddr]> data = default) => throw new NotImplementedException();
+                void Add[Type](in UEntityHandle handle, in global::System.ReadOnlySpan<[TypeAddr]> data = default) => throw new NotImplementedException();
                 
                 bool Remove[Type](in UEntityHandle handle) => throw new NotImplementedException();
             }
