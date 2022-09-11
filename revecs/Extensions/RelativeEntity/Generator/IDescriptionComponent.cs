@@ -57,10 +57,10 @@ public const string WorldAccess_ValueType = ""UEntityHandle"";
 public const string AccessorAccess_FieldType = ""EntityComponentAccessor<UEntityHandle>"";
 public const string AccessorAccess_Init = ""[field] = [world].AccessEntityComponent([componentType].UnsafeCast<UEntityHandle>());"";
 public const string AccessorAccess_Access = ""[field][[entity]]"";
-public const string AccessorAccess_ValueType = ""ReadOnlySpan<UEntityHandle>"";
+public const string AccessorAccess_ValueType = ""global::System.ReadOnlySpan<UEntityHandle>"";
 
 public const string WorldAccess_Access = ""[value] = [world].ReadComponent([entity], [componentType].UnsafeCast<UEntityHandle>())"";
-public const string WorldAccess_ValueType = ""ReadOnlySpan<UEntityHandle>"";
+public const string WorldAccess_ValueType = ""global::System.ReadOnlySpan<UEntityHandle>"";
         }
 ";
     
@@ -146,7 +146,7 @@ public const string WorldAccess_ValueType = ""ReadOnlySpan<UEntityHandle>"";
             return world.RemoveComponent(entity, [TypeAddr].Type.GetOrCreate(world));
         } 
 
-        public static Span<UEntityHandle> Get[Type](this RevolutionWorld world, UEntityHandle entity) {
+        public static global::System.Span<UEntityHandle> Get[Type](this RevolutionWorld world, UEntityHandle entity) {
             return world.ReadComponent(entity, [TypeAddr].Type.GetOrCreate(world));
         } 
     }
@@ -203,13 +203,13 @@ public const string WorldAccess_ValueType = ""ReadOnlySpan<UEntityHandle>"";
             return World.HasComponent(handle, [Type]Type);
         }
 
-        public Span<UEntityHandle> Read[Type](in UEntityHandle handle)
+        public global::System.Span<UEntityHandle> Read[Type](in UEntityHandle handle)
         {
             return World.ReadComponent(handle, [Type]Type);
         }
 "";
 
-                Span<UEntityHandle> Read[Type](in UEntityHandle handle) => throw new NotImplementedException();
+                global::System.Span<UEntityHandle> Read[Type](in UEntityHandle handle) => throw new NotImplementedException();
             }
             public interface IAdmin : IRevolutionCommand, IRead
             {
