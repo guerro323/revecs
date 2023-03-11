@@ -89,49 +89,49 @@ public interface IBufferComponent : IRevolutionComponent
                 public const bool WriteAccess = true;
 
                 public const string Body = @""
-        public ref BufferData<[TypeAddr]> Update[Type](in UEntityHandle handle)
+        public ref BufferData<[TypeAddr]> Update[Type](UEntityHandle handle)
         {
             return ref World.GetComponentData(handle, [Type]Type.UnsafeCast<BufferData<[TypeAddr]>>());
         }
 "";
 
-                ref BufferData<[TypeAddr]> Update[Type](in UEntityHandle handle) => throw new NotImplementedException();   
+                ref BufferData<[TypeAddr]> Update[Type](UEntityHandle handle) => throw new NotImplementedException();   
             }
             public interface IRead : IRevolutionCommand, __Internals.IBase 
             {
                 public const string ReadAccess = @""            if ([Type]Dependency_WriteCount == 0) [Type]Dependency.AddReader(request);"";
 
                 public const string Body = @""
-        public bool Has[Type](in UEntityHandle handle)
+        public bool Has[Type](UEntityHandle handle)
         {
             return World.HasComponent(handle, [Type]Type);
         }
 
-        public ref readonly BufferData<[TypeAddr]> Read[Type](in UEntityHandle handle)
+        public ref readonly BufferData<[TypeAddr]> Read[Type](UEntityHandle handle)
         {
             return ref World.GetComponentData(handle, [Type]Type.UnsafeCast<BufferData<[TypeAddr]>>());
         }
 "";
 
-                ref readonly BufferData<[TypeAddr]> Read[Type](in UEntityHandle handle) => throw new NotImplementedException();
+                ref readonly BufferData<[TypeAddr]> Read[Type](UEntityHandle handle) => throw new NotImplementedException();
             }
             public interface IAdmin : IRevolutionCommand, IWrite, IRead
             {
                 public const string Body = @""
-        public void Add[Type](in UEntityHandle handle, in global::System.ReadOnlySpan<[TypeAddr]> data = default)
+        public void Add[Type](UEntityHandle handle, in global::System.ReadOnlySpan<[TypeAddr]> data = default)
         {
             World.AddComponent(handle, [Type]Type, data);
         }
 
-        public bool Remove[Type](in UEntityHandle handle)
+        public bool Remove[Type](UEntityHandle handle)
         {
             return World.RemoveComponent(handle, [Type]Type);
         }
 "";
 
-                void Add[Type](in UEntityHandle handle, in global::System.ReadOnlySpan<[TypeAddr]> data = default) => throw new NotImplementedException();
+                void Add[Type](UEntityHandle handle, in global::System.ReadOnlySpan<[TypeAddr]> data = default) => throw new NotImplementedException();
                 
-                bool Remove[Type](in UEntityHandle handle) => throw new NotImplementedException();
+                bool Remove[Type](UEntityHandle handle) => throw new NotImplementedException();
             }
         }
     ";

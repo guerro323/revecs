@@ -85,7 +85,7 @@ namespace revecs.Core
         /// <param name="handle">The raw handle of the entity</param>
         /// <returns>Existence of the handle</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool Exists(in UEntityHandle handle)
+        public bool Exists(UEntityHandle handle)
         {
             return EntityBoard.Exists[handle.Id];
         }
@@ -111,7 +111,7 @@ namespace revecs.Core
         ///     For example: oldEntity.Version != gameWorld.Safe(oldEntity.Handle).Version
         /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public UEntitySafe Safe(in UEntityHandle handle)
+        public UEntitySafe Safe(UEntityHandle handle)
         {
             return new UEntitySafe(handle.Id, EntityBoard.Versions[handle.Id]);
         }

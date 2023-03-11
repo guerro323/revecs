@@ -91,18 +91,18 @@ public const string WorldAccess_ValueType = ""global::System.ReadOnlySpan<UEntit
                 public const string ReadAccess = @""            if ([Type]RelativeDependency_WriteCount == 0) [Type]RelativeDependency.AddReader(request);"";
 
                 public const string Body = @""
-        public bool Has[Type]Relative(in UEntityHandle handle)
+        public bool Has[Type]Relative(UEntityHandle handle)
         {
             return World.HasComponent(handle, [Type]RelativeType);
         }
 
-        public UEntityHandle Read[Type]Relative(in UEntityHandle handle)
+        public UEntityHandle Read[Type]Relative(UEntityHandle handle)
         {
             return World.GetComponentData(handle, [Type]RelativeType);
         }
 "";
 
-                UEntityHandle Read[Type]Relative(in UEntityHandle handle) => throw new NotImplementedException();
+                UEntityHandle Read[Type]Relative(UEntityHandle handle) => throw new NotImplementedException();
             }
             public interface IAdmin : IRevolutionCommand, IRead
             {
@@ -113,20 +113,20 @@ public const string WorldAccess_ValueType = ""global::System.ReadOnlySpan<UEntit
                 public const bool WriteAccess = true;
 
                 public const string Body = @""
-        public void Add[Type]Relative(in UEntityHandle handle, in UEntityHandle target)
+        public void Add[Type]Relative(UEntityHandle handle, in UEntityHandle target)
         {
             World.AddComponent(handle, [Type]RelativeType, target);
         }
 
-        public bool Remove[Type]Relative(in UEntityHandle handle)
+        public bool Remove[Type]Relative(UEntityHandle handle)
         {
             return World.RemoveComponent(handle, [Type]RelativeType);
         }
 "";
 
-                void Add[Type]Relative(in UEntityHandle handle, in UEntityHandle target) => throw new NotImplementedException();
+                void Add[Type]Relative(UEntityHandle handle, in UEntityHandle target) => throw new NotImplementedException();
                 
-                bool Remove[Type]Relative(in UEntityHandle handle) => throw new NotImplementedException();
+                bool Remove[Type]Relative(UEntityHandle handle) => throw new NotImplementedException();
             }
         }
 ";
@@ -198,18 +198,18 @@ public const string WorldAccess_ValueType = ""global::System.ReadOnlySpan<UEntit
                 public const string ReadAccess = @""            if ([Type]Dependency_WriteCount == 0) [Type]Dependency.AddReader(request);"";
 
                 public const string Body = @""
-        public bool Has[Type](in UEntityHandle handle)
+        public bool Has[Type](UEntityHandle handle)
         {
             return World.HasComponent(handle, [Type]Type);
         }
 
-        public global::System.Span<UEntityHandle> Read[Type](in UEntityHandle handle)
+        public global::System.Span<UEntityHandle> Read[Type](UEntityHandle handle)
         {
             return World.ReadComponent(handle, [Type]Type);
         }
 "";
 
-                global::System.Span<UEntityHandle> Read[Type](in UEntityHandle handle) => throw new NotImplementedException();
+                global::System.Span<UEntityHandle> Read[Type](UEntityHandle handle) => throw new NotImplementedException();
             }
             public interface IAdmin : IRevolutionCommand, IRead
             {
@@ -220,20 +220,20 @@ public const string WorldAccess_ValueType = ""global::System.ReadOnlySpan<UEntit
                 public const bool WriteAccess = true;
 
                 public const string Body = @""
-        public void Add[Type](in UEntityHandle handle)
+        public void Add[Type](UEntityHandle handle)
         {
             World.AddComponent(handle, [Type]Type, default);
         }
 
-        public bool Remove[Type](in UEntityHandle handle)
+        public bool Remove[Type](UEntityHandle handle)
         {
             return World.RemoveComponent(handle, [Type]Type);
         }
 "";
 
-                void Add[Type](in UEntityHandle handle) => throw new NotImplementedException();
+                void Add[Type](UEntityHandle handle) => throw new NotImplementedException();
                 
-                bool Remove[Type](in UEntityHandle handle) => throw new NotImplementedException();
+                bool Remove[Type](UEntityHandle handle) => throw new NotImplementedException();
             }
         }
 ";

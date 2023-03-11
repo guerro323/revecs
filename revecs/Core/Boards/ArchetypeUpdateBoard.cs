@@ -44,7 +44,7 @@ namespace revecs.Core.Boards
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void removeEntity(in UEntityHandle handle)
+        private void removeEntity(UEntityHandle handle)
         {
             ref var index = ref _column.queueIndex[handle.Id];
             _column.update[index] = default;
@@ -57,7 +57,7 @@ namespace revecs.Core.Boards
 #if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
 #endif
-        private void updateArchetype(in UEntityHandle handle)
+        private void updateArchetype(UEntityHandle handle)
         {
             GameWorldLowLevel.UpdateArchetype(
                 _archetypeBoard,

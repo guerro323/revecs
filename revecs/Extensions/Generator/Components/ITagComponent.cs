@@ -64,13 +64,13 @@ public interface ITagComponent : IRevolutionComponent
                 public const string ReadAccess = @""            if ([Type]Dependency_WriteCount == 0) [Type]Dependency.AddReader(request);"";
 
                 public const string Body = @""
-        public bool Has[Type](in UEntityHandle handle)
+        public bool Has[Type](UEntityHandle handle)
         {
             return World.HasComponent(handle, [Type]Type);
         }
 "";
 
-                bool Has[Type](in UEntityHandle handle) => throw new NotImplementedException();
+                bool Has[Type](UEntityHandle handle) => throw new NotImplementedException();
             }
             public interface IAdmin : IRevolutionCommand, IRead
             {
@@ -79,19 +79,19 @@ public interface ITagComponent : IRevolutionComponent
 "";
 
                 public const string Body = @""
-        public void Add[Type](in UEntityHandle handle)
+        public void Add[Type](UEntityHandle handle)
         {
             World.AddComponent(handle, [Type]Type, default);
         }
 
-        public bool Remove[Type](in UEntityHandle handle)
+        public bool Remove[Type](UEntityHandle handle)
         {
             return World.RemoveComponent(handle, [Type]Type);
         }
 "";
 
-                void Add[Type](in UEntityHandle handle) => throw new NotImplementedException();
-                bool Remove[Type](in UEntityHandle handle) => throw new NotImplementedException();
+                void Add[Type](UEntityHandle handle) => throw new NotImplementedException();
+                bool Remove[Type](UEntityHandle handle) => throw new NotImplementedException();
             }
         }
 ";

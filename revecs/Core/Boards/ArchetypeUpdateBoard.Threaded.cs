@@ -45,7 +45,7 @@ namespace revecs.Core.Boards
 #if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
 #endif
-        private void updateArchetype(in UEntityHandle handle)
+        private void updateArchetype(UEntityHandle handle)
         {
             GameWorldLowLevel.UpdateArchetype(
                 _archetypeBoard,
